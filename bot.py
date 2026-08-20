@@ -98,12 +98,17 @@ def update_user_data(user_id, new_data):
 async def is_member(user_id, context):
     for ch in CHANNELS:
         try:
+            # For private groups (invite links), we check differently
             if ch["username"].startswith("+"):
+                # Try to check if user is in the group via chat_id
+                # Since we can't check with username, we'll use the link
+                # For now, we'll skip group verification or use a different method
                 continue
             member = await context.bot.get_chat_member(chat_id=ch["username"], user_id=user_id)
             if member.status not in ["member", "administrator", "creator"]:
                 return False
-        except:
+        except Exception as e:
+            # If error occurs (user not found, etc.), return False
             return False
     return True
 
@@ -117,24 +122,22 @@ async def is_verified(user_id, context):
 # ---------- KEYBOARDS ----------
 def get_user_keyboard():
     buttons = [
-    ["📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱", "🪪 𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭"]
-
-]
+        ["📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱", "🪪 𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭"]
+    ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=False)
 
 def get_admin_keyboard():
     buttons = [
-    ["📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱", "🪪 𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-    ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵"]
-
-]
+        ["📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱", "🪪 𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
+        ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵"]
+    ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=False)
 
 def get_bot_management_menu():
@@ -583,7 +586,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keyboard = []
-    # Custom styled buttons as requested
     keyboard.append([InlineKeyboardButton("📢 𝘫𝘰𝘪𝘯 𝘤𝘩𝘢𝘯𝘯𝘦𝘭 𝟣", url=CHANNELS[0]["link"])])
     keyboard.append([InlineKeyboardButton("📢 𝘫𝘰𝘪𝘯 𝘤𝘩𝘢𝘯𝘯𝘦𝘭 𝟤", url=CHANNELS[1]["link"])])
     keyboard.append([InlineKeyboardButton("📢 𝘫𝘰𝘪𝘯 𝘤𝘩𝘢𝘯𝘯𝘦𝘭 𝟥", url=CHANNELS[2]["link"])])
@@ -930,37 +932,37 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     # ---- LOOKUP COMMANDS ----
-    if text == "𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
+    if text == "📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("📞 Send a phone number (e.g., 9876543210):")
         context.user_data["lookup_type"] = "number"
-    elif text == "𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🏦 Send an IFSC code (e.g., SBIN0001234):")
         context.user_data["lookup_type"] = "ifsc"
-    elif text == "𝘗𝘪𝘯 𝘊𝘰𝘥𝘦":
+    elif text == "📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦":
         await update.message.reply_text("📮 Send a PIN code (e.g., 110001):")
         context.user_data["lookup_type"] = "pincode"
-    elif text == "𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🌤️ Send a city name (e.g., Delhi):")
         context.user_data["lookup_type"] = "weather"
-    elif text == "𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("📧 Send an email address:")
         context.user_data["lookup_type"] = "email"
-    elif text == "𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "🪪 𝘈𝘥𝘩𝘢𝘢𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🆔 Send an Aadhar number (12 digits):")
         context.user_data["lookup_type"] = "aadhar"
-    elif text == "𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🌐 Send an IP address (e.g., 8.8.8.8):")
         context.user_data["lookup_type"] = "ip"
-    elif text == "𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱":
+    elif text == "💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🆔 Send a PAN number (e.g., ABCDE1234F):")
         context.user_data["lookup_type"] = "pan"
-    elif text == "𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵":
+    elif text == "👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵":
         user_data = get_user_data(user_id)
         history = user_data.get("history", [])
         hist_str = "\n".join(history[-5:]) if history else "No history"
         msg = f"👤 **Your Account**\n🪙 Coins: {user_data['coins']}\n👥 Referrals: {user_data['referrals']}\n📜 History:\n{hist_str}"
         await update.message.reply_text(msg, parse_mode="Markdown")
-    elif text == "𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭":
+    elif text == "🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭":
         ref_link = f"https://t.me/{context.bot.username}?start={user_id}"
         await update.message.reply_text(f"🔗 **Referral Link**\n\nShare this link to earn {REFERRAL_BONUS} coins per referral!\n\n{ref_link}")
     elif text == "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵" and user_id in ADMIN_IDS:
