@@ -18,7 +18,7 @@ CHANNELS = [
     {"name": "Channel 1", "username": "@wftis_ak4sh", "link": "https://t.me/wftis_ak4sh"},
     {"name": "Channel 2", "username": "@Err9r403", "link": "https://t.me/Err9r403"},
     {"name": "Channel 3", "username": "@AkashOSINT", "link": "https://t.me/AkashOSINT"},
-    {"name": "Group GC", "username": "+EfWs0w63dYgwNTg1", "link": "https://t.me/+EfWs0w63dYgwNTg1"}
+    {"name": "Group GC", "username": "+EfWs0w63dYgwNTg1", "link": "https://t.me/+oRfAbV_UhstmZDdh"}
 ]
 
 # ---------- API URLs ----------
