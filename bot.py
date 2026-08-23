@@ -577,11 +577,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if await is_verified(user_id, context):
         welcome = (
-            f"𝑯𝒆𝒚 👋 {first_name}\n\n"
-            f"𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤𝑩𝒐𝒕 /~❤️\n"
-            f"𝑼𝒔𝒆𝒓 𝑰𝑫 ➜ {user_id} ❤️\n\n"
-            f"✅ You are verified!\nUse the buttons below."
-        )
+    f"ʜᴇʏ 👋 {first_name}\n\n"
+    f"ʏᴏᴜʀ ɪᴅ ~ {user_id} ❤️\n\n"
+    f"ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴀᴋᴀsʜ ᴏsɪɴᴛ ʙᴏᴛ 🧑‍💻\n"
+    f"ᴜsᴇ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ."
+)
+        
         await update.message.reply_text(welcome, reply_markup=get_keyboard(user_id))
         return
 
