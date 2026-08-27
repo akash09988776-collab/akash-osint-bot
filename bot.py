@@ -171,6 +171,53 @@ def get_keyboard(user_id=None):
         return get_admin_keyboard()
     return get_user_keyboard()
 
+# ---------- HTML PARSE FUNCTION ----------
+def parse_html_number_response(html_content):
+    """Parse HTML response to extract number details"""
+    result = {}
+    
+    # Extract fields using regex
+    patterns = {
+        "PHONE": r"PHONE:\s*([^<]+)",
+        "PHONE2": r"PHONE2:\s*([^<]+)",
+        "PHONE3": r"PHONE3:\s*([^<]+)",
+        "PHONE4": r"PHONE4:\s*([^<]+)",
+        "PHONE5": r"PHONE5:\s*([^<]+)",
+        "PHONE6": r"PHONE6:\s*([^<]+)",
+        "ADRES": r"ADRES:\s*([^<]+)",
+        "ADRES2": r"ADRES2:\s*([^<]+)",
+        "ADRES3": r"ADRES3:\s*([^<]+)",
+        "DOCUMENTNUMBER": r"DOCUMENTNUMBER:\s*([^<]+)",
+        "FULLNAME": r"FULLNAME:\s*([^<]+)",
+        "FATHERNAME": r"FATHERNAME:\s*([^<]+)",
+        "REGION": r"REGION:\s*([^<]+)",
+        "EMAIL": r"EMAIL:\s*([^<]+)",
+        "INDIANSTATE": r"INDIANSTATE:\s*([^<]+)",
+        "MOBILEOPERATOR": r"MOBILEOPERATOR:\s*([^<]+)",
+        "PROVIDER": r"PROVIDER:\s*([^<]+)"
+    }
+    
+    for key, pattern in patterns.items():
+        match = re.search(pattern, html_content)
+        if match:
+            value = match.group(1).strip()
+            if value and value != "NA" and value != "N/A":
+                result[key] = value
+    
+    # Try to extract email using regex (if not found in EMAIL field)
+    if "EMAIL" not in result:
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        email_matches = re.findall(email_pattern, html_content)
+        if email_matches:
+            valid_emails = []
+            for email in email_matches:
+                if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg'):
+                    valid_emails.append(email.upper())
+            if valid_emails:
+                result["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
+    
+    return result if result else None
+
 # ---------- FORMAT FUNCTIONS ----------
 def format_number_output(data):
     if not data:
@@ -259,46 +306,6 @@ def format_number_output(data):
     out += json.dumps(result, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
-def parse_html_number_response(html_content):
-    """Parse HTML response to extract number details"""
-    result = {}
-    
-    # Extract fields using regex
-    patterns = {
-        "PHONE": r"PHONE:\s*([^<]+)",
-        "PHONE2": r"PHONE2:\s*([^<]+)",
-        "PHONE3": r"PHONE3:\s*([^<]+)",
-        "PHONE4": r"PHONE4:\s*([^<]+)",
-        "PHONE5": r"PHONE5:\s*([^<]+)",
-        "ADRES": r"ADRES:\s*([^<]+)",
-        "ADRES2": r"ADRES2:\s*([^<]+)",
-        "ADRES3": r"ADRES3:\s*([^<]+)",
-        "DOCUMENTNUMBER": r"DOCUMENTNUMBER:\s*([^<]+)",
-        "FULLNAME": r"FULLNAME:\s*([^<]+)",
-        "FATHERNAME": r"FATHERNAME:\s*([^<]+)",
-        "REGION": r"REGION:\s*([^<]+)"
-    }
-    
-    for key, pattern in patterns.items():
-        match = re.search(pattern, html_content)
-        if match:
-            value = match.group(1).strip()
-            if value and value != "NA" and value != "N/A":
-                result[key] = value
-    
-    # Extract email from HTML
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    email_matches = re.findall(email_pattern, html_content)
-    if email_matches:
-        valid_emails = []
-        for email in email_matches:
-            if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg'):
-                valid_emails.append(email)
-        if valid_emails:
-            result["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
-    
-    return result if result else None
 
 def format_ifsc_output(data):
     if not data:
@@ -575,7 +582,9 @@ async def perform_lookup(update, context, lookup_type, input_text):
         user_data["coins"] -= COST_PER_LOOKUP
 
     if lookup_type == "number":
-        url = API_NUMBER.format(input_text)
+        # Clean input - remove spaces, + sign
+        clean_input = input_text.replace(" ", "").replace("+", "")
+        url = API_NUMBER.format(clean_input)
     elif lookup_type == "ifsc":
         url = API_IFSC.format(input_text)
     elif lookup_type == "pincode":
@@ -604,30 +613,6 @@ async def perform_lookup(update, context, lookup_type, input_text):
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
         return
-
-    # ---- NUMBER LOOKUP - EXTRA: FETCH EMAIL ----
-    if lookup_type == "number":
-        # Try to fetch email using email API
-        try:
-            email_url = API_EMAIL.format(input_text)
-            email_response = requests.get(email_url, timeout=10)
-            if email_response.status_code == 200:
-                email_data = email_response.json()
-                # Extract email from email API response
-                if isinstance(email_data, dict) and "results" in email_data:
-                    emails = []
-                    for result in email_data["results"]:
-                        if "email" in result and result["email"]:
-                            emails.append(result["email"])
-                        elif "email_address" in result and result["email_address"]:
-                            emails.append(result["email_address"])
-                    if emails:
-                        # Add email to number data
-                        if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
-                            for record in data["data"]:
-                                record["email"] = ", ".join(emails[:3])  # max 3 emails
-        except:
-            pass  # If email fetch fails, continue without email
 
     if lookup_type == "number":
         result = format_number_output(data)
