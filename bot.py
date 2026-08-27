@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # ---------- ENVIRONMENT VARIABLES ----------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976","8333711029").split(",")]
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976","8975530760").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
 CHANNELS = [
@@ -22,7 +22,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://dark-info.site/test/api.php?key=Demo&num={}"
+API_NUMBER = "https://calltracerinfoapi.vercel.app/api?number={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
@@ -175,106 +175,35 @@ def get_keyboard(user_id=None):
 def format_number_output(data):
     if not data:
         return "❌ No results found."
-    
-    # Check if API returned error
-    if isinstance(data, dict) and data.get("status") == "error":
-        return f"❌ API Error: {data.get('message', 'Unknown error')}"
-    
-    # Check if data contains _raw with HTML
-    if isinstance(data, dict) and "data" in data:
-        records = data.get("data", [])
-        if records and isinstance(records, list) and len(records) > 0:
-            first_record = records[0]
-            if "_raw" in first_record:
-                html_content = first_record["_raw"]
-                
-                # Check if it says "No information found"
-                if "No information found" in html_content:
-                    return "❌ No information found for this number."
-                
-                # Parse HTML to extract data
-                parsed_data = {}
-                
-                # Direct extraction using simple string operations
-                lines = html_content.split('<br />')
-                for line in lines:
-                    line = line.strip()
-                    if ':' in line and not line.startswith('<!') and not line.startswith('<'):
-                        parts = line.split(':', 1)
-                        if len(parts) == 2:
-                            key = parts[0].strip()
-                            value = parts[1].strip()
-                            if key and value and value != "NA" and value != "N/A":
-                                parsed_data[key] = value
-                
-                # Extract email using regex
-                email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-                email_matches = re.findall(email_pattern, html_content)
-                if email_matches:
-                    valid_emails = []
-                    for email in email_matches:
-                        if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg') and not email.endswith('.jpeg'):
-                            valid_emails.append(email.upper())
-                    if valid_emails:
-                        parsed_data["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
-                
-                if parsed_data:
-                    # Build bullet point output - ONLY CLEAN DATA
-                    out = "📞 **Number Lookup Result**\n\n"
-                    for key, value in parsed_data.items():
-                        out += f"• **{key}:** {value}\n"
-                    out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-                    return out
-                else:
-                    return "❌ No valid data found in response."
-    
-    # If data is already clean JSON
-    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
-        raw_records = data["data"]
-        
-        # Remove duplicates and _raw
-        seen = set()
-        unique_records = []
-        for record in raw_records:
-            if "_raw" in record:
-                continue
-            if "mobile" in record and "id" in record:
-                key = f"{record.get('mobile', '')}_{record.get('id', '')}"
-            elif "mobile" in record:
-                key = record.get("mobile", "")
-            else:
-                key = json.dumps(record, sort_keys=True)
-            
-            if key not in seen:
-                seen.add(key)
-                unique_records.append(record)
-        
-        clean_records = []
-        for record in unique_records:
-            clean = {}
-            for key, value in record.items():
-                if value is not None and value != "" and value != "NA" and value != "N/A":
-                    clean[key] = value
-            if clean:
-                clean_records.append(clean)
-        
-        if clean_records:
-            out = "📞 **Number Lookup Result**\n\n"
-            for record in clean_records:
-                for key, value in record.items():
-                    out += f"• **{key}:** {value}\n"
-            out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-            return out
-        else:
-            return "❌ No information found for this number."
-    
-    # Fallback
-    out = "📞 **Number Lookup Result**\n\n"
+    results = []
     if isinstance(data, dict):
-        for key, value in data.items():
-            if value and value != "NA" and value != "N/A" and key != "_raw":
-                out += f"• **{key}:** {value}\n"
-    out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+        if "results" in data:
+            results = data["results"]
+        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
+            results = data["data"]["results"]
+        elif "data" in data and isinstance(data["data"], list):
+            results = data["data"]
+    if not results:
+        out = "**Number Lookup**\n```json\n"
+        out += json.dumps(data, indent=4, ensure_ascii=False)
+        out += "\n```"
+        return out
+    clean_results = []
+    for record in results:
+        clean_record = {}
+        for key, value in record.items():
+            if value is not None and value != "":
+                clean_record[key] = value
+        if clean_record:
+            clean_results.append(clean_record)
+    clean_data = {
+        "total_records": len(clean_results),
+        "data": clean_results,
+        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    }
+    out = "**Number Lookup**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += "\n```"
     return out
 
 def format_ifsc_output(data):
@@ -552,9 +481,7 @@ async def perform_lookup(update, context, lookup_type, input_text):
         user_data["coins"] -= COST_PER_LOOKUP
 
     if lookup_type == "number":
-        # Clean input - remove spaces, + sign
-        clean_input = input_text.replace(" ", "").replace("+", "")
-        url = API_NUMBER.format(clean_input)
+        url = API_NUMBER.format(input_text)
     elif lookup_type == "ifsc":
         url = API_IFSC.format(input_text)
     elif lookup_type == "pincode":
@@ -580,8 +507,8 @@ async def perform_lookup(update, context, lookup_type, input_text):
             data = response.json()
         except json.JSONDecodeError:
             data = {"_raw": response.text}
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+    except Exception:
+        await update.message.reply_text("❌ No results found or service unavailable. Please try again later.")
         return
 
     if lookup_type == "number":
@@ -1001,7 +928,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ---- LOOKUP COMMANDS ----
     if text == "📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
-        await update.message.reply_text("📞 Send a phone number with country code:\nExample: `+91 9876543210` or `+1 9876543210`\n\nAny country: +91 (India), +1 (USA), +92 (Pakistan), +44 (UK), etc.")
+        await update.message.reply_text("📞 Send a phone number (e.g., 9876543210):")
         context.user_data["lookup_type"] = "number"
     elif text == "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🏦 Send an IFSC code (e.g., SBIN0001234):")
