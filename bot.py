@@ -11,14 +11,14 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # ---------- ENVIRONMENT VARIABLES ----------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976").split(",")]
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8670581725").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
 CHANNELS = [
     {"name": "Channel 1", "username": "@wftis_ak4sh", "link": "https://t.me/wftis_ak4sh"},
     {"name": "Channel 2", "username": "@Err9r403", "link": "https://t.me/Err9r403"},
     {"name": "Channel 3", "username": "@AkashOSINT", "link": "https://t.me/AkashOSINT"},
-    {"name": "Group GC", "username": "+EfWs0w63dYgwNTg1", "link": "https://t.me/+oRfAbV_UhstmZDdh"}
+    {"name": "Group GC", "username": "+EfWs0w63dYgwNTg1", "link": "https://t.me/+EfWs0w63dYgwNTg1"}
 ]
 
 # ---------- API URLs ----------
@@ -98,17 +98,12 @@ def update_user_data(user_id, new_data):
 async def is_member(user_id, context):
     for ch in CHANNELS:
         try:
-            # For private groups (invite links), we check differently
             if ch["username"].startswith("+"):
-                # Try to check if user is in the group via chat_id
-                # Since we can't check with username, we'll use the link
-                # For now, we'll skip group verification or use a different method
                 continue
             member = await context.bot.get_chat_member(chat_id=ch["username"], user_id=user_id)
             if member.status not in ["member", "administrator", "creator"]:
                 return False
-        except Exception as e:
-            # If error occurs (user not found, etc.), return False
+        except:
             return False
     return True
 
@@ -180,34 +175,57 @@ def get_keyboard(user_id=None):
 def format_number_output(data):
     if not data:
         return "❌ No results found."
+    
+    # Check if API returned error
+    if isinstance(data, dict) and data.get("status") == "error":
+        return f"❌ API Error: {data.get('message', 'Unknown error')}"
+    
+    # Extract results
     results = []
     if isinstance(data, dict):
         if "results" in data:
             results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
+        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
+            results = data["data"]["results"]
+        elif "number" in data or "country" in data or "name" in data:
+            results = [data]
+        else:
+            results = [data]
+    elif isinstance(data, list):
+        results = data
+    else:
+        results = [data]
+    
     if not results:
         out = "**Number Lookup**\n```json\n"
         out += json.dumps(data, indent=4, ensure_ascii=False)
         out += "\n```"
         return out
+    
+    # Clean results
     clean_results = []
     for record in results:
-        clean_record = {}
+        if not isinstance(record, dict):
+            clean_results.append(record)
+            continue
+        clean = {}
         for key, value in record.items():
             if value is not None and value != "":
-                clean_record[key] = value
-        if clean_record:
-            clean_results.append(clean_record)
-    clean_data = {
+                clean[key] = value
+        if clean:
+            clean_results.append(clean)
+    
+    # Build final output
+    result = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+    
     out = "**Number Lookup**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += json.dumps(result, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
 
@@ -512,8 +530,8 @@ async def perform_lookup(update, context, lookup_type, input_text):
             data = response.json()
         except json.JSONDecodeError:
             data = {"_raw": response.text}
-    except Exception:
-        await update.message.reply_text("❌ No results found or service unavailable. Please try again later.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
         return
 
     if lookup_type == "number":
@@ -582,7 +600,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     f"ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴀᴋᴀsʜ ᴏsɪɴᴛ ʙᴏᴛ 🧑‍💻\n"
     f"ᴜsᴇ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ."
 )
-        
         await update.message.reply_text(welcome, reply_markup=get_keyboard(user_id))
         return
 
@@ -934,7 +951,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ---- LOOKUP COMMANDS ----
     if text == "📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
-        await update.message.reply_text("📞 Send a phone number (e.g., 9876543210):")
+        await update.message.reply_text("📞 Send a phone number with country code:\nExample: `+919876543210` or `19876543210`")
         context.user_data["lookup_type"] = "number"
     elif text == "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🏦 Send an IFSC code (e.g., SBIN0001234):")
