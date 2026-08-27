@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # ---------- ENVIRONMENT VARIABLES ----------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8670581725").split(",")]
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976","8333711029").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
 CHANNELS = [
@@ -171,50 +171,6 @@ def get_keyboard(user_id=None):
         return get_admin_keyboard()
     return get_user_keyboard()
 
-# ---------- HTML PARSE FUNCTION ----------
-def parse_html_number_response(html_content):
-    """Parse HTML response to extract number details"""
-    result = {}
-    
-    # All patterns with their keys
-    patterns = {
-        "PHONE": r"PHONE:\s*([^<]+)",
-        "PHONE2": r"PHONE2:\s*([^<]+)",
-        "PHONE3": r"PHONE3:\s*([^<]+)",
-        "PHONE4": r"PHONE4:\s*([^<]+)",
-        "PHONE5": r"PHONE5:\s*([^<]+)",
-        "PHONE6": r"PHONE6:\s*([^<]+)",
-        "ADRES": r"ADRES:\s*([^<]+)",
-        "ADRES2": r"ADRES2:\s*([^<]+)",
-        "ADRES3": r"ADRES3:\s*([^<]+)",
-        "DOCUMENTNUMBER": r"DOCUMENTNUMBER:\s*([^<]+)",
-        "FULLNAME": r"FULLNAME:\s*([^<]+)",
-        "FATHERNAME": r"FATHERNAME:\s*([^<]+)",
-        "REGION": r"REGION:\s*([^<]+)",
-        "EMAIL": r"EMAIL:\s*([^<]+)"
-    }
-    
-    for key, pattern in patterns.items():
-        match = re.search(pattern, html_content)
-        if match:
-            value = match.group(1).strip()
-            if value and value != "NA" and value != "N/A":
-                result[key] = value
-    
-    # Try to extract email using regex (if not found in EMAIL field)
-    if "EMAIL" not in result:
-        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-        email_matches = re.findall(email_pattern, html_content)
-        if email_matches:
-            valid_emails = []
-            for email in email_matches:
-                if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg') and not email.endswith('.jpeg'):
-                    valid_emails.append(email.upper())
-            if valid_emails:
-                result["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
-    
-    return result if result else None
-
 # ---------- FORMAT FUNCTIONS ----------
 def format_number_output(data):
     if not data:
@@ -236,7 +192,7 @@ def format_number_output(data):
                 if "No information found" in html_content:
                     return "❌ No information found for this number."
                 
-                # Parse HTML to extract data - DIRECT METHOD
+                # Parse HTML to extract data
                 parsed_data = {}
                 
                 # Direct extraction using simple string operations
@@ -251,7 +207,7 @@ def format_number_output(data):
                             if key and value and value != "NA" and value != "N/A":
                                 parsed_data[key] = value
                 
-                # Also extract email using regex
+                # Extract email using regex
                 email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
                 email_matches = re.findall(email_pattern, html_content)
                 if email_matches:
@@ -263,14 +219,11 @@ def format_number_output(data):
                         parsed_data["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
                 
                 if parsed_data:
-                    result = {
-                        "total_records": 1,
-                        "data": [parsed_data],
-                        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-                    }
-                    out = "**Number Lookup**\n```json\n"
-                    out += json.dumps(result, indent=4, ensure_ascii=False)
-                    out += "\n```"
+                    # Build bullet point output - ONLY CLEAN DATA
+                    out = "📞 **Number Lookup Result**\n\n"
+                    for key, value in parsed_data.items():
+                        out += f"• **{key}:** {value}\n"
+                    out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
                     return out
                 else:
                     return "❌ No valid data found in response."
@@ -279,11 +232,10 @@ def format_number_output(data):
     if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
         raw_records = data["data"]
         
-        # Remove duplicates based on mobile number or ID
+        # Remove duplicates and _raw
         seen = set()
         unique_records = []
         for record in raw_records:
-            # Skip if record is empty or has _raw with no info
             if "_raw" in record:
                 continue
             if "mobile" in record and "id" in record:
@@ -297,7 +249,6 @@ def format_number_output(data):
                 seen.add(key)
                 unique_records.append(record)
         
-        # Clean each record (remove empty fields)
         clean_records = []
         for record in unique_records:
             clean = {}
@@ -308,25 +259,24 @@ def format_number_output(data):
                 clean_records.append(clean)
         
         if clean_records:
-            result = {
-                "total_records": len(clean_records),
-                "data": clean_records,
-                "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-            }
+            out = "📞 **Number Lookup Result**\n\n"
+            for record in clean_records:
+                for key, value in record.items():
+                    out += f"• **{key}:** {value}\n"
+            out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+            return out
         else:
             return "❌ No information found for this number."
-    else:
-        # Fallback
-        result = {
-            "total_records": 1,
-            "data": [data] if data else [],
-            "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-        }
     
-    out = "**Number Lookup**\n```json\n"
-    out += json.dumps(result, indent=4, ensure_ascii=False)
-    out += "\n```"
+    # Fallback
+    out = "📞 **Number Lookup Result**\n\n"
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if value and value != "NA" and value != "N/A" and key != "_raw":
+                out += f"• **{key}:** {value}\n"
+    out += f"\n🔹 **Developer:** 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     return out
+
 def format_ifsc_output(data):
     if not data:
         return "❌ No IFSC details found."
@@ -695,11 +645,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if await is_verified(user_id, context):
         welcome = (
-            f"𝑯𝒆𝒚 👋 {first_name}\n\n"
-            f"𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤𝑩𝒐𝒕 /~❤️\n"
-            f"𝑼𝒔𝒆𝒓 𝑰𝑫 ➜ {user_id} ❤️\n\n"
-            f"✅ You are verified!\nUse the buttons below."
-        )
+    f"ʜᴇʏ 👋 {first_name}\n\n"
+    f"ʏᴏᴜʀ ɪᴅ ~ {user_id} ❤️\n\n"
+    f"ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴀᴋᴀsʜ ᴏsɪɴᴛ ʙᴏᴛ 🧑‍💻\n"
+    f"ᴜsᴇ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ."
+)
         await update.message.reply_text(welcome, reply_markup=get_keyboard(user_id))
         return
 
