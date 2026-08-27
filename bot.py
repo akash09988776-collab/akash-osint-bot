@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # ---------- ENVIRONMENT VARIABLES ----------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976","8333711029").split(",")]
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976,8333711029").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
 CHANNELS = [
