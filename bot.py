@@ -236,8 +236,32 @@ def format_number_output(data):
                 if "No information found" in html_content:
                     return "❌ No information found for this number."
                 
-                # Parse HTML to extract data
-                parsed_data = parse_html_number_response(html_content)
+                # Parse HTML to extract data - DIRECT METHOD
+                parsed_data = {}
+                
+                # Direct extraction using simple string operations
+                lines = html_content.split('<br />')
+                for line in lines:
+                    line = line.strip()
+                    if ':' in line and not line.startswith('<!') and not line.startswith('<'):
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            if key and value and value != "NA" and value != "N/A":
+                                parsed_data[key] = value
+                
+                # Also extract email using regex
+                email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+                email_matches = re.findall(email_pattern, html_content)
+                if email_matches:
+                    valid_emails = []
+                    for email in email_matches:
+                        if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg') and not email.endswith('.jpeg'):
+                            valid_emails.append(email.upper())
+                    if valid_emails:
+                        parsed_data["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
+                
                 if parsed_data:
                     result = {
                         "total_records": 1,
@@ -303,7 +327,6 @@ def format_number_output(data):
     out += json.dumps(result, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_ifsc_output(data):
     if not data:
         return "❌ No IFSC details found."
