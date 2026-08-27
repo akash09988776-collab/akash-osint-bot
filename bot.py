@@ -22,7 +22,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
+API_NUMBER = "https://dark-info.site/test/api.php?key=Demo&num={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
