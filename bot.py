@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # ---------- ENVIRONMENT VARIABLES ----------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
-ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976").split(",")]
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8670581725").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
 CHANNELS = [
@@ -176,7 +176,7 @@ def parse_html_number_response(html_content):
     """Parse HTML response to extract number details"""
     result = {}
     
-    # Extract fields using regex
+    # All patterns with their keys
     patterns = {
         "PHONE": r"PHONE:\s*([^<]+)",
         "PHONE2": r"PHONE2:\s*([^<]+)",
@@ -191,10 +191,7 @@ def parse_html_number_response(html_content):
         "FULLNAME": r"FULLNAME:\s*([^<]+)",
         "FATHERNAME": r"FATHERNAME:\s*([^<]+)",
         "REGION": r"REGION:\s*([^<]+)",
-        "EMAIL": r"EMAIL:\s*([^<]+)",
-        "INDIANSTATE": r"INDIANSTATE:\s*([^<]+)",
-        "MOBILEOPERATOR": r"MOBILEOPERATOR:\s*([^<]+)",
-        "PROVIDER": r"PROVIDER:\s*([^<]+)"
+        "EMAIL": r"EMAIL:\s*([^<]+)"
     }
     
     for key, pattern in patterns.items():
@@ -211,7 +208,7 @@ def parse_html_number_response(html_content):
         if email_matches:
             valid_emails = []
             for email in email_matches:
-                if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg'):
+                if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg') and not email.endswith('.jpeg'):
                     valid_emails.append(email.upper())
             if valid_emails:
                 result["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
@@ -675,11 +672,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if await is_verified(user_id, context):
         welcome = (
-    f"ʜᴇʏ 👋 {first_name}\n\n"
-    f"ʏᴏᴜʀ ɪᴅ ~ {user_id} ❤️\n\n"
-    f"ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴀᴋᴀsʜ ᴏsɪɴᴛ ʙᴏᴛ 🧑‍💻\n"
-    f"ᴜsᴇ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ʙᴇʟᴏᴡ."
-)
+            f"𝑯𝒆𝒚 👋 {first_name}\n\n"
+            f"𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤𝑩𝒐𝒕 /~❤️\n"
+            f"𝑼𝒔𝒆𝒓 𝑰𝑫 ➜ {user_id} ❤️\n\n"
+            f"✅ You are verified!\nUse the buttons below."
+        )
         await update.message.reply_text(welcome, reply_markup=get_keyboard(user_id))
         return
 
