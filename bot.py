@@ -180,6 +180,33 @@ def format_number_output(data):
     if isinstance(data, dict) and data.get("status") == "error":
         return f"❌ API Error: {data.get('message', 'Unknown error')}"
     
+    # Check if data contains _raw with HTML
+    if isinstance(data, dict) and "data" in data:
+        records = data.get("data", [])
+        if records and isinstance(records, list) and len(records) > 0:
+            first_record = records[0]
+            if "_raw" in first_record:
+                html_content = first_record["_raw"]
+                
+                # Check if it says "No information found"
+                if "No information found" in html_content:
+                    return "❌ No information found for this number."
+                
+                # Parse HTML to extract data
+                parsed_data = parse_html_number_response(html_content)
+                if parsed_data:
+                    result = {
+                        "total_records": 1,
+                        "data": [parsed_data],
+                        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+                    }
+                    out = "**Number Lookup**\n```json\n"
+                    out += json.dumps(result, indent=4, ensure_ascii=False)
+                    out += "\n```"
+                    return out
+                else:
+                    return "❌ No valid data found in response."
+    
     # If data is already clean JSON
     if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
         raw_records = data["data"]
@@ -188,13 +215,14 @@ def format_number_output(data):
         seen = set()
         unique_records = []
         for record in raw_records:
-            # Create a unique key for deduplication
+            # Skip if record is empty or has _raw with no info
+            if "_raw" in record:
+                continue
             if "mobile" in record and "id" in record:
                 key = f"{record.get('mobile', '')}_{record.get('id', '')}"
             elif "mobile" in record:
                 key = record.get("mobile", "")
             else:
-                # If no mobile, use entire record as string
                 key = json.dumps(record, sort_keys=True)
             
             if key not in seen:
@@ -211,13 +239,16 @@ def format_number_output(data):
             if clean:
                 clean_records.append(clean)
         
-        result = {
-            "total_records": len(clean_records),
-            "data": clean_records,
-            "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-        }
+        if clean_records:
+            result = {
+                "total_records": len(clean_records),
+                "data": clean_records,
+                "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+            }
+        else:
+            return "❌ No information found for this number."
     else:
-        # Fallback: wrap data in standard format
+        # Fallback
         result = {
             "total_records": 1,
             "data": [data] if data else [],
@@ -228,6 +259,46 @@ def format_number_output(data):
     out += json.dumps(result, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
+
+def parse_html_number_response(html_content):
+    """Parse HTML response to extract number details"""
+    result = {}
+    
+    # Extract fields using regex
+    patterns = {
+        "PHONE": r"PHONE:\s*([^<]+)",
+        "PHONE2": r"PHONE2:\s*([^<]+)",
+        "PHONE3": r"PHONE3:\s*([^<]+)",
+        "PHONE4": r"PHONE4:\s*([^<]+)",
+        "PHONE5": r"PHONE5:\s*([^<]+)",
+        "ADRES": r"ADRES:\s*([^<]+)",
+        "ADRES2": r"ADRES2:\s*([^<]+)",
+        "ADRES3": r"ADRES3:\s*([^<]+)",
+        "DOCUMENTNUMBER": r"DOCUMENTNUMBER:\s*([^<]+)",
+        "FULLNAME": r"FULLNAME:\s*([^<]+)",
+        "FATHERNAME": r"FATHERNAME:\s*([^<]+)",
+        "REGION": r"REGION:\s*([^<]+)"
+    }
+    
+    for key, pattern in patterns.items():
+        match = re.search(pattern, html_content)
+        if match:
+            value = match.group(1).strip()
+            if value and value != "NA" and value != "N/A":
+                result[key] = value
+    
+    # Extract email from HTML
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    email_matches = re.findall(email_pattern, html_content)
+    if email_matches:
+        valid_emails = []
+        for email in email_matches:
+            if not email.endswith('.png') and not email.endswith('.jpg') and not email.endswith('.css') and not email.endswith('.svg'):
+                valid_emails.append(email)
+        if valid_emails:
+            result["EMAIL"] = valid_emails[0] if len(valid_emails) == 1 else valid_emails
+    
+    return result if result else None
 
 def format_ifsc_output(data):
     if not data:
