@@ -180,49 +180,49 @@ def format_number_output(data):
     if isinstance(data, dict) and data.get("status") == "error":
         return f"❌ API Error: {data.get('message', 'Unknown error')}"
     
-    # Extract results
-    results = []
-    if isinstance(data, dict):
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "number" in data or "country" in data or "name" in data:
-            results = [data]
-        else:
-            results = [data]
-    elif isinstance(data, list):
-        results = data
+    # If data is already clean JSON
+    if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+        raw_records = data["data"]
+        
+        # Remove duplicates based on mobile number or ID
+        seen = set()
+        unique_records = []
+        for record in raw_records:
+            # Create a unique key for deduplication
+            if "mobile" in record and "id" in record:
+                key = f"{record.get('mobile', '')}_{record.get('id', '')}"
+            elif "mobile" in record:
+                key = record.get("mobile", "")
+            else:
+                # If no mobile, use entire record as string
+                key = json.dumps(record, sort_keys=True)
+            
+            if key not in seen:
+                seen.add(key)
+                unique_records.append(record)
+        
+        # Clean each record (remove empty fields)
+        clean_records = []
+        for record in unique_records:
+            clean = {}
+            for key, value in record.items():
+                if value is not None and value != "" and value != "NA" and value != "N/A":
+                    clean[key] = value
+            if clean:
+                clean_records.append(clean)
+        
+        result = {
+            "total_records": len(clean_records),
+            "data": clean_records,
+            "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+        }
     else:
-        results = [data]
-    
-    if not results:
-        out = "**Number Lookup**\n```json\n"
-        out += json.dumps(data, indent=4, ensure_ascii=False)
-        out += "\n```"
-        return out
-    
-    # Clean results
-    clean_results = []
-    for record in results:
-        if not isinstance(record, dict):
-            clean_results.append(record)
-            continue
-        clean = {}
-        for key, value in record.items():
-            if value is not None and value != "":
-                clean[key] = value
-        if clean:
-            clean_results.append(clean)
-    
-    # Build final output
-    result = {
-        "total_records": len(clean_results),
-        "data": clean_results,
-        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-    }
+        # Fallback: wrap data in standard format
+        result = {
+            "total_records": 1,
+            "data": [data] if data else [],
+            "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+        }
     
     out = "**Number Lookup**\n```json\n"
     out += json.dumps(result, indent=4, ensure_ascii=False)
@@ -533,6 +533,30 @@ async def perform_lookup(update, context, lookup_type, input_text):
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {str(e)}")
         return
+
+    # ---- NUMBER LOOKUP - EXTRA: FETCH EMAIL ----
+    if lookup_type == "number":
+        # Try to fetch email using email API
+        try:
+            email_url = API_EMAIL.format(input_text)
+            email_response = requests.get(email_url, timeout=10)
+            if email_response.status_code == 200:
+                email_data = email_response.json()
+                # Extract email from email API response
+                if isinstance(email_data, dict) and "results" in email_data:
+                    emails = []
+                    for result in email_data["results"]:
+                        if "email" in result and result["email"]:
+                            emails.append(result["email"])
+                        elif "email_address" in result and result["email_address"]:
+                            emails.append(result["email_address"])
+                    if emails:
+                        # Add email to number data
+                        if isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+                            for record in data["data"]:
+                                record["email"] = ", ".join(emails[:3])  # max 3 emails
+        except:
+            pass  # If email fetch fails, continue without email
 
     if lookup_type == "number":
         result = format_number_output(data)
@@ -951,7 +975,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ---- LOOKUP COMMANDS ----
     if text == "📱 𝘕𝘶𝘮𝘣𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱":
-        await update.message.reply_text("📞 Send a phone number with country code:\nExample: `+919876543210` or `19876543210`")
+        await update.message.reply_text("📞 Send a phone number with country code:\nExample: `+91 9876543210` or `+1 9876543210`\n\nAny country: +91 (India), +1 (USA), +92 (Pakistan), +44 (UK), etc.")
         context.user_data["lookup_type"] = "number"
     elif text == "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🏦 Send an IFSC code (e.g., SBIN0001234):")
