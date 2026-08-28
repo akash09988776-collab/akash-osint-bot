@@ -175,37 +175,74 @@ def get_keyboard(user_id=None):
 def format_number_output(data):
     if not data:
         return "❌ No results found."
-    results = []
+    
+    # Extract the actual data from the nested structure
+    actual_data = data
+    
+    # Check if data has nested structure with 'result'
     if isinstance(data, dict):
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-    if not results:
+        if "result" in data and isinstance(data["result"], dict):
+            if "result" in data["result"] and isinstance(data["result"]["result"], dict):
+                if "data" in data["result"]["result"] and isinstance(data["result"]["result"]["data"], dict):
+                    actual_data = data["result"]["result"]["data"]
+                else:
+                    actual_data = data["result"]["result"]
+            elif "data" in data["result"]:
+                actual_data = data["result"]["data"]
+            else:
+                actual_data = data["result"]
+        elif "data" in data:
+            actual_data = data["data"]
+    
+    # Try to get main_records or records
+    records = []
+    if isinstance(actual_data, dict):
+        if "main_records" in actual_data and isinstance(actual_data["main_records"], list):
+            records = actual_data["main_records"]
+        elif "records" in actual_data and isinstance(actual_data["records"], list):
+            records = actual_data["records"]
+        elif "data" in actual_data and isinstance(actual_data["data"], list):
+            records = actual_data["data"]
+        elif "result" in actual_data and isinstance(actual_data["result"], list):
+            records = actual_data["result"]
+        else:
+            # Single record case
+            if any(key in actual_data for key in ["phone", "full_name", "address", "the_name_of_the_father"]):
+                records = [actual_data]
+    
+    if not records:
+        # Fallback: show raw data
         out = "**Number Lookup**\n```json\n"
+        # Remove API_Developer if present
+        if isinstance(data, dict) and "API_Developer" in data:
+            del data["API_Developer"]
         out += json.dumps(data, indent=4, ensure_ascii=False)
         out += "\n```"
         return out
+    
+    # Clean records - remove empty fields
     clean_results = []
-    for record in results:
-        clean_record = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        clean = {}
         for key, value in record.items():
             if value is not None and value != "":
-                clean_record[key] = value
-        if clean_record:
-            clean_results.append(clean_record)
-    clean_data = {
+                clean[key] = value
+        if clean:
+            clean_results.append(clean)
+    
+    # Build final output with YOUR developer name
+    result = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+    
     out = "**Number Lookup**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += json.dumps(result, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_ifsc_output(data):
     if not data:
         return "❌ No IFSC details found."
