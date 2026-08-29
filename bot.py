@@ -27,7 +27,7 @@ API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
 API_EMAIL = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
-API_AADHAR = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
+API_AADHAR = "https://off.proportalxc.workers.dev/leak?adhar={}"
 API_IP = "https://talks-chain-restrictions-statistics.trycloudflare.com/search?query={}"
 API_PAN = "https://counted-developing-parade-man.trycloudflare.com/pan-info?pan={}"
 
