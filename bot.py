@@ -174,20 +174,28 @@ def get_keyboard(user_id=None):
 # ---------- FORMAT FUNCTIONS ----------
 def format_number_output(data):
     if not data:
-        return "❌ No results found."
+        return "❌ No data found."
+    
+    # Extract results from various possible response formats
     results = []
+    query = None
+    
     if isinstance(data, dict):
+        query = data.get("query") or data.get("q") or data.get("number")
+        
         if "results" in data:
             results = data["results"]
         elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
             results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
+    
+    # If no results or empty results
     if not results:
-        out = "**Number Lookup**\n```json\n"
-        out += json.dumps(data, indent=4, ensure_ascii=False)
-        out += "\n```"
-        return out
+        q = query or "Unknown"
+        return f"❌ No data found for number: `{q}`\n\n💡 Please check the number and try again."
+    
+    # Clean results (remove empty fields)
     clean_results = []
     for record in results:
         clean_record = {}
@@ -196,16 +204,21 @@ def format_number_output(data):
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
+    
+    if not clean_results:
+        q = query or "Unknown"
+        return f"❌ No data found for number: `{q}`\n\n💡 Please check the number and try again."
+    
     clean_data = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+    
     out = "**Number Lookup**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_ifsc_output(data):
     if not data:
         return "❌ No IFSC details found."
