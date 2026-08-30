@@ -10,7 +10,7 @@ from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKe
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 # ---------- ENVIRONMENT VARIABLES ----------
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8875132519:AAEJNNuZqaLD2qV_5G6mFLTEmkavL20eXlg")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976,8333711029").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
