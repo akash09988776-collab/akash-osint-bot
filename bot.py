@@ -342,39 +342,53 @@ def format_email_output(data):
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_aadhar_output(data):
     if not data:
-        return "❌ No Aadhar details found."
+        return "❌ No data found."
+    
+    # Extract results from various possible response formats
     results = []
     query = None
-    success = True
+    
     if isinstance(data, dict):
-        success = data.get("success", True)
-        query = data.get("query") or data.get("q")
+        query = data.get("query") or data.get("q") or data.get("aadhar")
+        
         if "results" in data:
             results = data["results"]
         elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
             results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
+    
+    # If no results or empty results
     if not results:
-        out = "**Aadhar Info**\n```json\n"
-        out += json.dumps(data, indent=4, ensure_ascii=False)
-        out += "\n```"
-        return out
+        q = query or "Unknown"
+        return f"❌ No data found for Aadhar: `{q}`\n\n💡 Please check the number and try again (12 digits)."
+    
+    # Clean results (remove empty fields)
+    clean_results = []
+    for record in results:
+        clean_record = {}
+        for key, value in record.items():
+            if value is not None and value != "":
+                clean_record[key] = value
+        if clean_record:
+            clean_results.append(clean_record)
+    
+    if not clean_results:
+        q = query or "Unknown"
+        return f"❌ No data found for Aadhar: `{q}`"
+    
     clean_data = {
-        "success": success,
-        "query": query or "N/A",
-        "total_found": len(results),
-        "results": results,
+        "total_records": len(clean_results),
+        "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+    
     out = "**Aadhar Info**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_ip_output(data):
     if not data:
         return "❌ No IP details found."
