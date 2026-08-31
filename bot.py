@@ -313,31 +313,50 @@ def format_weather_output(data):
 
 def format_email_output(data):
     if not data:
-        return "❌ No email details found."
+        return "❌ No data found."
+    
     results = []
     query = None
-    success = True
+    
     if isinstance(data, dict):
-        success = data.get("success", True)
-        query = data.get("query") or data.get("q")
+        query = data.get("query") or data.get("q") or data.get("email")
+        
         if "results" in data:
             results = data["results"]
         elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
             results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
+    
+    # If no results or empty results
     if not results:
-        out = "**Email Info**\n```json\n"
-        out += json.dumps(data, indent=4, ensure_ascii=False)
-        out += "\n```"
-        return out
+        q = query or "Unknown"
+        return f"❌ No data found for email: `{q}`\n\n💡 Please check the email address and try again."
+    
+    # Clean and filter results
+    clean_results = []
+    for record in results:
+        if not isinstance(record, dict):
+            continue
+        clean = {}
+        for key, value in record.items():
+            if value is not None and value != "":
+                clean[key] = value
+        if clean:
+            clean_results.append(clean)
+    
+    if not clean_results:
+        q = query or "Unknown"
+        return f"❌ No data found for email: `{q}`"
+    
     clean_data = {
-        "success": success,
+        "success": True,
         "query": query or "N/A",
-        "total_found": len(results),
-        "results": results,
+        "total_found": len(clean_results),
+        "results": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+    
     out = "**Email Info**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
