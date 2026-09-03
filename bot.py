@@ -176,38 +176,68 @@ def format_number_output(data):
     if not data:
         return "❌ No data found."
     
-    # Extract results from various possible response formats
     results = []
     query = None
     
+    # Case 1: Direct results array
     if isinstance(data, dict):
         query = data.get("query") or data.get("q") or data.get("number")
         
-        if "results" in data:
+        if "results" in data and data["results"]:
             results = data["results"]
         elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
             results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
+        
+        # Case 2: New API format - result.result.data.alternative_records
+        if not results and "result" in data:
+            result_data = data["result"]
+            if isinstance(result_data, dict):
+                query = result_data.get("query") or query
+                if "result" in result_data and isinstance(result_data["result"], dict):
+                    inner = result_data["result"]
+                    if "data" in inner and isinstance(inner["data"], dict):
+                        if "alternative_records" in inner["data"]:
+                            results = inner["data"]["alternative_records"]
+                        elif "records" in inner["data"]:
+                            results = inner["data"]["records"]
+                    elif "records" in inner:
+                        results = inner["records"]
+                elif "data" in result_data and isinstance(result_data["data"], dict):
+                    if "alternative_records" in result_data["data"]:
+                        results = result_data["data"]["alternative_records"]
+                    elif "records" in result_data["data"]:
+                        results = result_data["data"]["records"]
+        
+        # Case 3: Direct alternative_records
+        if not results and "alternative_records" in data:
+            results = data["alternative_records"]
+        elif not results and "records" in data:
+            results = data["records"]
     
-    # If no results or empty results
     if not results:
         q = query or "Unknown"
         return f"❌ No data found for number: `{q}`\n\n💡 Please check the number and try again."
     
-    # Clean results (remove empty fields)
     clean_results = []
     for record in results:
+        if not isinstance(record, dict):
+            continue
         clean_record = {}
         for key, value in record.items():
             if value is not None and value != "":
+                # Clean up phone numbers if needed
+                if key in ["phone", "phone_no", "number"] and isinstance(value, str):
+                    # Format phone number nicely
+                    pass
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
     
     if not clean_results:
         q = query or "Unknown"
-        return f"❌ No data found for number: `{q}`\n\n💡 Please check the number and try again."
+        return f"❌ No data found for number: `{q}`"
     
     clean_data = {
         "total_records": len(clean_results),
