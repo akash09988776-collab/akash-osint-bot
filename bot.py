@@ -22,7 +22,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://darkxapi.onrender.com/api/v1/info?key=DEMOem&query={}"
+API_NUMBER = "https://free.proapis.bond/num?number={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
