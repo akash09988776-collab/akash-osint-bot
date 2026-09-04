@@ -22,12 +22,12 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://free.proapis.bond/num?number={}"
+API_NUMBER = "https://aditya-osint-api.onrender.com/api/v1/info?key=Num&query={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
-API_EMAIL = "https://darkxapi.onrender.com/api/v1/info?key=DEMOem&query={}"
-API_AADHAR = "https://darkxapi.onrender.com/api/v1/info?key=DEMOem&query={}"
+API_EMAIL = "https://aditya-osint-api.onrender.com/api/v1/info?key={}"
+API_AADHAR = "https://aditya-osint-api.onrender.com/api/v1/info?key=Aadhar&query={}"
 API_IP = "https://talks-chain-restrictions-statistics.trycloudflare.com/search?query={}"
 API_PAN = "https://counted-developing-parade-man.trycloudflare.com/pan-info?pan={}"
 
