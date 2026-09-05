@@ -10,7 +10,7 @@ from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKe
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
 # ---------- ENVIRONMENT VARIABLES ----------
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8875132519:AAEJNNuZqaLD2qV_5G6mFLTEmkavL20eXlg")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8827201871:AAH_dWGvDD1KvxCCdy30sm0cz_6VZ-zTuhM")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "8979291976,8333711029").split(",")]
 
 # ---------- CHANNELS (4 TOTAL) ----------
@@ -26,10 +26,11 @@ API_NUMBER = "https://aditya-osint-api.onrender.com/api/v1/info?key=Num&query={}
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
-API_EMAIL = "https://aditya-osint-api.onrender.com/api/v1/info?key={}"
-API_AADHAR = "https://aditya-osint-api.onrender.com/api/v1/info?key=Aadhar&query={}"
+API_EMAIL = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
+API_AADHAR = "https://darkxapi.onrender.com/api/v1/info?key=Dark&query={}"
 API_IP = "https://talks-chain-restrictions-statistics.trycloudflare.com/search?query={}"
 API_PAN = "https://counted-developing-parade-man.trycloudflare.com/pan-info?pan={}"
+API_TG_TO_NUM = "https://tg2num-botadminshere.vercel.app/?id={}"   # NEW
 
 COINS_ON_START = 5
 COST_PER_LOOKUP = 1
@@ -121,7 +122,8 @@ def get_user_keyboard():
         ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
         ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
         ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-        ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭"]
+        ["🔢 𝘛𝘎 𝘵𝘰 𝘕𝘶𝘮", "👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵"],
+        ["🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭"]
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=False)
 
@@ -131,7 +133,8 @@ def get_admin_keyboard():
         ["💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱", "🏦 𝘐𝘍𝘚𝘊 𝘓𝘰𝘰𝘬𝘶𝘱"],
         ["📍 𝘗𝘪𝘯 𝘊𝘰𝘥𝘦", "🌐 𝘐𝘗 𝘓𝘰𝘰𝘬𝘶𝘱"],
         ["📧 𝘌𝘮𝘢𝘪𝘭 𝘓𝘰𝘰𝘬𝘶𝘱", "☁️ 𝘞𝘦𝘢𝘵𝘩𝘦𝘳 𝘓𝘰𝘰𝘬𝘶𝘱"],
-        ["👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵", "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵"]
+        ["🔢 𝘛𝘎 𝘵𝘰 𝘕𝘶𝘮", "👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵"],
+        ["🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵"]
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=False)
 
@@ -171,7 +174,8 @@ def get_keyboard(user_id=None):
         return get_admin_keyboard()
     return get_user_keyboard()
 
-# ---------- FORMAT FUNCTIONS ----------
+# ---------- FORMAT FUNCTIONS (ALL FIXED) ----------
+
 def format_number_output(data):
     if not data:
         return "❌ No data found."
@@ -179,42 +183,15 @@ def format_number_output(data):
     results = []
     query = None
     
-    # Case 1: Direct results array
     if isinstance(data, dict):
         query = data.get("query") or data.get("q") or data.get("number")
         
-        if "results" in data and data["results"]:
+        if "results" in data:
             results = data["results"]
         elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
             results = data["data"]["results"]
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
-        
-        # Case 2: New API format - result.result.data.alternative_records
-        if not results and "result" in data:
-            result_data = data["result"]
-            if isinstance(result_data, dict):
-                query = result_data.get("query") or query
-                if "result" in result_data and isinstance(result_data["result"], dict):
-                    inner = result_data["result"]
-                    if "data" in inner and isinstance(inner["data"], dict):
-                        if "alternative_records" in inner["data"]:
-                            results = inner["data"]["alternative_records"]
-                        elif "records" in inner["data"]:
-                            results = inner["data"]["records"]
-                    elif "records" in inner:
-                        results = inner["records"]
-                elif "data" in result_data and isinstance(result_data["data"], dict):
-                    if "alternative_records" in result_data["data"]:
-                        results = result_data["data"]["alternative_records"]
-                    elif "records" in result_data["data"]:
-                        results = result_data["data"]["records"]
-        
-        # Case 3: Direct alternative_records
-        if not results and "alternative_records" in data:
-            results = data["alternative_records"]
-        elif not results and "records" in data:
-            results = data["records"]
     
     if not results:
         q = query or "Unknown"
@@ -222,15 +199,9 @@ def format_number_output(data):
     
     clean_results = []
     for record in results:
-        if not isinstance(record, dict):
-            continue
         clean_record = {}
         for key, value in record.items():
             if value is not None and value != "":
-                # Clean up phone numbers if needed
-                if key in ["phone", "phone_no", "number"] and isinstance(value, str):
-                    # Format phone number nicely
-                    pass
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
@@ -249,153 +220,11 @@ def format_number_output(data):
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-def format_ifsc_output(data):
-    if not data:
-        return "❌ No IFSC details found."
-    if "success" in data and data["success"] == False:
-        return "❌ No IFSC details found."
-    ifsc_data = data
-    if "data" in data and isinstance(data["data"], dict):
-        ifsc_data = data["data"]
-    clean_data = {}
-    for key, value in ifsc_data.items():
-        if value is not None and value != "":
-            clean_data[key] = value
-    if not clean_data:
-        return "❌ No IFSC details found."
-    clean_data["developer"] = "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-    out = "**IFSC Lookup**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
-    out += "\n```"
-    return out
 
-def format_pincode_output(data):
-    if not data or data.get("status") != "success":
-        return "❌ No PIN code details found."
-    pincode = data.get("pincode", "N/A")
-    status = data.get("status", "success")
-    total_records = data.get("total_records_found") or data.get("total_records") or 1
-    delivery_status = data.get("delivery_status")
-    district = data.get("district")
-    division = data.get("division")
-    region = data.get("region")
-    state = data.get("state")
-    country = data.get("country")
-    if not any([delivery_status, district, division, region, state, country]):
-        records = data.get("records", [])
-        if records and len(records) > 0:
-            first = records[0]
-            delivery_status = first.get("delivery_status", "N/A")
-            district = first.get("district", "N/A")
-            division = first.get("division", "N/A")
-            region = first.get("region", "N/A")
-            state = first.get("state", "N/A")
-            country = first.get("country", "India")
-    clean_data = {
-        "status": status,
-        "pincode": pincode,
-        "total_records_found": total_records,
-        "delivery_status": delivery_status or "N/A",
-        "district": district or "N/A",
-        "division": division or "N/A",
-        "region": region or "N/A",
-        "state": state or "N/A",
-        "country": country or "India",
-        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-    }
-    out = "**PIN Code Search**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
-    out += "\n```"
-    return out
-
-def format_weather_output(data):
-    if not data or not data.get("success") or not data.get("data"):
-        return "❌ No weather data found."
-    w = data["data"]
-    city = w.get("city", {})
-    current = w.get("current", {})
-    forecast = w.get("forecast", {}).get("daily_7day", [])
-    short_forecast = []
-    for day in forecast[:3]:
-        day_data = {}
-        if day.get("date"): day_data["date"] = day.get("date")
-        if day.get("temperature", {}).get("max_c"): day_data["max_c"] = day.get("temperature", {}).get("max_c")
-        if day.get("temperature", {}).get("min_c"): day_data["min_c"] = day.get("temperature", {}).get("min_c")
-        if day.get("precipitation", {}).get("total_mm"): day_data["rain_mm"] = day.get("precipitation", {}).get("total_mm")
-        if day.get("weather", {}).get("icon"): day_data["icon"] = day.get("weather", {}).get("icon")
-        if day_data:
-            short_forecast.append(day_data)
-    clean_data = {
-        "city": city.get("searched"),
-        "state": city.get("state"),
-        "country": city.get("country"),
-        "temperature": current.get("temperature", {}).get("actual_c"),
-        "feels_like": current.get("temperature", {}).get("feels_like_c"),
-        "humidity": current.get("atmosphere", {}).get("humidity_percent"),
-        "wind": current.get("wind", {}).get("speed_kmh"),
-        "forecast_3day": short_forecast,
-        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-    }
-    out = "**Weather Check**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
-    out += "\n```"
-    return out
-
-def format_email_output(data):
-    if not data:
-        return "❌ No data found."
-    
-    results = []
-    query = None
-    
-    if isinstance(data, dict):
-        query = data.get("query") or data.get("q") or data.get("email")
-        
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-    
-    # If no results or empty results
-    if not results:
-        q = query or "Unknown"
-        return f"❌ No data found for email: `{q}`\n\n💡 Please check the email address and try again."
-    
-    # Clean and filter results
-    clean_results = []
-    for record in results:
-        if not isinstance(record, dict):
-            continue
-        clean = {}
-        for key, value in record.items():
-            if value is not None and value != "":
-                clean[key] = value
-        if clean:
-            clean_results.append(clean)
-    
-    if not clean_results:
-        q = query or "Unknown"
-        return f"❌ No data found for email: `{q}`"
-    
-    clean_data = {
-        "success": True,
-        "query": query or "N/A",
-        "total_found": len(clean_results),
-        "results": clean_results,
-        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
-    }
-    
-    out = "**Email Info**\n```json\n"
-    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
-    out += "\n```"
-    return out
 def format_aadhar_output(data):
     if not data:
         return "❌ No data found."
     
-    # Extract results from various possible response formats
     results = []
     query = None
     
@@ -409,12 +238,10 @@ def format_aadhar_output(data):
         elif "data" in data and isinstance(data["data"], list):
             results = data["data"]
     
-    # If no results or empty results
     if not results:
         q = query or "Unknown"
         return f"❌ No data found for Aadhar: `{q}`\n\n💡 Please check the number and try again (12 digits)."
     
-    # Clean results (remove empty fields)
     clean_results = []
     for record in results:
         clean_record = {}
@@ -438,10 +265,213 @@ def format_aadhar_output(data):
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
+
+def format_pan_output(data):
+    if not data:
+        return "❌ No data found."
+    
+    results = []
+    query = None
+    
+    if isinstance(data, dict):
+        query = data.get("query") or data.get("q") or data.get("pan")
+        
+        if "results" in data:
+            results = data["results"]
+        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
+            results = data["data"]["results"]
+        elif "data" in data and isinstance(data["data"], list):
+            results = data["data"]
+        elif "data" in data and isinstance(data["data"], dict):
+            results = [data["data"]]
+    
+    if not results:
+        if isinstance(data, dict) and "pan" in data:
+            results = [data]
+        else:
+            q = query or "Unknown"
+            return f"❌ No data found for PAN: `{q}`\n\n💡 Please check the PAN number and try again."
+    
+    clean_results = []
+    for record in results:
+        if not isinstance(record, dict):
+            continue
+        clean = {}
+        for key, value in record.items():
+            if value is not None and value != "":
+                clean[key] = value
+        if clean:
+            clean_results.append(clean)
+    
+    if not clean_results:
+        q = query or "Unknown"
+        return f"❌ No data found for PAN: `{q}`"
+    
+    result = {
+        "total_records": len(clean_results),
+        "data": clean_results,
+        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    }
+    out = "**PAN Info**\n```json\n"
+    out += json.dumps(result, indent=4, ensure_ascii=False)
+    out += "\n```"
+    return out
+
+def format_ifsc_output(data):
+    if not data:
+        return "❌ No data found."
+    
+    if "success" in data and data["success"] == False:
+        return "❌ Invalid IFSC code or no data found."
+    
+    ifsc_data = data
+    if "data" in data and isinstance(data["data"], dict):
+        ifsc_data = data["data"]
+    
+    clean_data = {}
+    for key, value in ifsc_data.items():
+        if value is not None and value != "":
+            clean_data[key] = value
+    
+    if not clean_data or len(clean_data) == 0:
+        query = data.get("query") or data.get("code") or "Unknown"
+        return f"❌ No data found for IFSC: `{query}`"
+    
+    clean_data["developer"] = "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    out = "**IFSC Lookup**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += "\n```"
+    return out
+
+def format_pincode_output(data):
+    if not data or data.get("status") != "success":
+        return "❌ No data found for this PIN code."
+    
+    pincode = data.get("pincode", "N/A")
+    status = data.get("status", "success")
+    total_records = data.get("total_records_found") or data.get("total_records") or 1
+    
+    delivery_status = data.get("delivery_status")
+    district = data.get("district")
+    division = data.get("division")
+    region = data.get("region")
+    state = data.get("state")
+    country = data.get("country")
+    
+    if not any([delivery_status, district, division, region, state, country]):
+        records = data.get("records", [])
+        if records and len(records) > 0:
+            first = records[0]
+            delivery_status = first.get("delivery_status", "N/A")
+            district = first.get("district", "N/A")
+            division = first.get("division", "N/A")
+            region = first.get("region", "N/A")
+            state = first.get("state", "N/A")
+            country = first.get("country", "India")
+    
+    if not any([delivery_status, district, division, region, state, country]):
+        return f"❌ No data found for PIN code: `{pincode}`"
+    
+    clean_data = {
+        "status": status,
+        "pincode": pincode,
+        "total_records_found": total_records,
+        "delivery_status": delivery_status or "N/A",
+        "district": district or "N/A",
+        "division": division or "N/A",
+        "region": region or "N/A",
+        "state": state or "N/A",
+        "country": country or "India",
+        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    }
+    out = "**PIN Code Search**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += "\n```"
+    return out
+
+def format_weather_output(data):
+    if not data or not data.get("success") or not data.get("data"):
+        return "❌ No weather data found for this location."
+    
+    w = data["data"]
+    city = w.get("city", {})
+    current = w.get("current", {})
+    forecast = w.get("forecast", {}).get("daily_7day", [])
+    
+    if not city and not current:
+        query = data.get("query") or "Unknown"
+        return f"❌ No weather data found for: `{query}`"
+    
+    short_forecast = []
+    for day in forecast[:3]:
+        day_data = {}
+        if day.get("date"): day_data["date"] = day.get("date")
+        if day.get("temperature", {}).get("max_c"): day_data["max_c"] = day.get("temperature", {}).get("max_c")
+        if day.get("temperature", {}).get("min_c"): day_data["min_c"] = day.get("temperature", {}).get("min_c")
+        if day.get("precipitation", {}).get("total_mm"): day_data["rain_mm"] = day.get("precipitation", {}).get("total_mm")
+        if day.get("weather", {}).get("icon"): day_data["icon"] = day.get("weather", {}).get("icon")
+        if day_data:
+            short_forecast.append(day_data)
+    
+    clean_data = {
+        "city": city.get("searched"),
+        "state": city.get("state"),
+        "country": city.get("country"),
+        "temperature": current.get("temperature", {}).get("actual_c"),
+        "feels_like": current.get("temperature", {}).get("feels_like_c"),
+        "humidity": current.get("atmosphere", {}).get("humidity_percent"),
+        "wind": current.get("wind", {}).get("speed_kmh"),
+        "forecast_3day": short_forecast,
+        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    }
+    
+    out = "**Weather Check**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += "\n```"
+    return out
+
+def format_email_output(data):
+    if not data:
+        return "❌ No data found."
+    
+    results = []
+    query = None
+    success = True
+    
+    if isinstance(data, dict):
+        success = data.get("success", True)
+        query = data.get("query") or data.get("q") or data.get("email")
+        
+        if "results" in data:
+            results = data["results"]
+        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
+            results = data["data"]["results"]
+        elif "data" in data and isinstance(data["data"], list):
+            results = data["data"]
+    
+    if not results:
+        q = query or "Unknown"
+        return f"❌ No data found for email: `{q}`\n\n💡 Please check the email address and try again."
+    
+    clean_data = {
+        "success": success,
+        "query": query or "N/A",
+        "total_found": len(results),
+        "results": results,
+        "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
+    }
+    
+    out = "**Email Info**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
+    out += "\n```"
+    return out
+
 def format_ip_output(data):
     if not data:
-        return "❌ No IP details found."
+        return "❌ No data found."
+    
     ip_data = None
+    
     if isinstance(data, dict):
         if 'data' in data and isinstance(data['data'], dict):
             ip_data = data['data']
@@ -453,17 +483,18 @@ def format_ip_output(data):
             ip_data = data
     else:
         ip_data = data
+    
     if ip_data is None:
-        out = "**IP Info**\n```json\n"
-        out += json.dumps(data, indent=4, ensure_ascii=False)
-        out += "\n```"
-        return out
+        return "❌ No IP data found."
+    
     if isinstance(ip_data, list):
         records = ip_data
     else:
         records = [ip_data]
+    
     unwanted_keys = ['success', 'readme', 'developer']
     cleaned_records = []
+    
     for rec in records:
         if not isinstance(rec, dict):
             cleaned_records.append(rec)
@@ -476,6 +507,11 @@ def format_ip_output(data):
                 clean[key] = value
         if clean:
             cleaned_records.append(clean)
+    
+    if not cleaned_records:
+        query = data.get("query") or "Unknown"
+        return f"❌ No data found for IP: `{query}`"
+    
     result = {
         "total_records": len(cleaned_records),
         "data": cleaned_records,
@@ -486,46 +522,46 @@ def format_ip_output(data):
     out += "\n```"
     return out
 
-def format_pan_output(data):
+# ---------- NEW: TG TO NUM FORMAT ----------
+def format_tg_to_num_output(data):
     if not data:
-        return "❌ No PAN details found."
-
-    results = []
-    if isinstance(data, dict):
-        if "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-        elif "data" in data and isinstance(data["data"], dict):
-            results = [data["data"]]
-        elif "results" in data:
-            results = data["results"]
-
-    if not results:
-        if isinstance(data, dict) and "pan" in data:
-            results = [data]
-        else:
-            out = "**PAN Info**\n```json\n"
-            out += json.dumps(data, indent=4, ensure_ascii=False)
-            out += "\n```"
-            return out
-
-    clean_results = []
-    for record in results:
-        if not isinstance(record, dict):
-            continue
-        clean = {}
-        for key, value in record.items():
-            if value is not None and value != "":
-                clean[key] = value
-        if clean:
-            clean_results.append(clean)
-
-    result = {
-        "total_records": len(clean_results),
-        "data": clean_results,
+        return "❌ No data found."
+    
+    # Check if API returned error
+    if isinstance(data, dict) and data.get("success") == False:
+        query = data.get("query") or "Unknown"
+        return f"❌ No data found for Telegram ID: `{query}`"
+    
+    # Extract DATA field (if exists)
+    if "𝘿𝘼𝙏𝘼" in data:
+        data = data["𝘿𝘼𝙏𝘼"]
+    
+    success = data.get("𝙎𝙐𝘾𝘾𝙀𝙎𝙎", False)
+    query = data.get("𝙌𝙐𝙀𝙍𝙔", "Unknown")
+    result = data.get("𝙍𝙀𝙎𝙐𝙇𝙏", {})
+    
+    if not success:
+        return f"❌ No data found for Telegram ID: `{query}`"
+    
+    phone = result.get("𝙋𝙃𝙊𝙉𝙀")
+    country = result.get("𝘾𝙊𝙐𝙉𝙏𝙍𝙔")
+    country_code = result.get("𝘾𝙊𝙐𝙉𝙏𝙍𝙔 𝘾𝙊𝘿𝙀")
+    status = result.get("𝙇𝙊𝙊𝙆𝙐𝙋 𝙎𝙏𝘼𝙏𝙐𝙎", "UNKNOWN")
+    
+    if not phone:
+        return f"❌ No data found for Telegram ID: `{query}`"
+    
+    clean_data = {
+        "Telegram ID": query,
+        "Phone": phone,
+        "Country": country or "N/A",
+        "Country Code": country_code or "N/A",
+        "Status": status,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    out = "**PAN Info**\n```json\n"
-    out += json.dumps(result, indent=4, ensure_ascii=False)
+    
+    out = "**TG to Num Lookup**\n```json\n"
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
 
@@ -572,6 +608,8 @@ async def perform_lookup(update, context, lookup_type, input_text):
         url = API_IP.format(input_text)
     elif lookup_type == "pan":
         url = API_PAN.format(input_text)
+    elif lookup_type == "tg_to_num":
+        url = API_TG_TO_NUM.format(input_text)
     else:
         await update.message.reply_text("Unknown lookup.")
         return
@@ -603,6 +641,8 @@ async def perform_lookup(update, context, lookup_type, input_text):
         result = format_ip_output(data)
     elif lookup_type == "pan":
         result = format_pan_output(data)
+    elif lookup_type == "tg_to_num":
+        result = format_tg_to_num_output(data)
     else:
         result = "Unknown"
 
@@ -1027,6 +1067,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "💳 𝘗𝘢𝘯 𝘓𝘰𝘰𝘬𝘶𝘱":
         await update.message.reply_text("🆔 Send a PAN number (e.g., ABCDE1234F):")
         context.user_data["lookup_type"] = "pan"
+    elif text == "🔢 𝘛𝘎 𝘵𝘰 𝘕𝘶𝘮":
+        await update.message.reply_text("🔢 Send a Telegram User ID (e.g., 8497389368):")
+        context.user_data["lookup_type"] = "tg_to_num"
     elif text == "👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵":
         user_data = get_user_data(user_id)
         history = user_data.get("history", [])
