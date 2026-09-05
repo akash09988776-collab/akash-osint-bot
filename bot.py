@@ -22,7 +22,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://aditya-osint-api.onrender.com/api/v1/info?key=Num&query={}"
+API_NUMBER = "https://darkxapi.onrender.com/api/v1/info?key=Dark&query={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
