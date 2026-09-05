@@ -526,45 +526,35 @@ def format_ip_output(data):
 def format_tg_to_num_output(data):
     if not data:
         return "❌ No data found."
-    
-    # Check if API returned error
-    if isinstance(data, dict) and data.get("success") == False:
-        query = data.get("query") or "Unknown"
-        return f"❌ No data found for Telegram ID: `{query}`"
-    
-    # Extract DATA field (if exists)
-    if "𝘿𝘼𝙏𝘼" in data:
-        data = data["𝘿𝘼𝙏𝘼"]
-    
-    success = data.get("𝙎𝙐𝘾𝘾𝙀𝙎𝙎", False)
-    query = data.get("𝙌𝙐𝙀𝙍𝙔", "Unknown")
-    result = data.get("𝙍𝙀𝙎𝙐𝙇𝙏", {})
-    
+
+    # Check if API returned success
+    success = data.get("success", False)
+    query = data.get("query", "Unknown")
+    result = data.get("result", {})
+
     if not success:
-        return f"❌ No data found for Telegram ID: `{query}`"
-    
-    phone = result.get("𝙋𝙃𝙊𝙉𝙀")
-    country = result.get("𝘾𝙊𝙐𝙉𝙏𝙍𝙔")
-    country_code = result.get("𝘾𝙊𝙐𝙉𝙏𝙍𝙔 𝘾𝙊𝘿𝙀")
-    status = result.get("𝙇𝙊𝙊𝙆𝙐𝙋 𝙎𝙏𝘼𝙏𝙐𝙎", "UNKNOWN")
-    
-    if not phone:
-        return f"❌ No data found for Telegram ID: `{query}`"
-    
+        return f"❌ No data found for Telegram ID: `{query}`\n\n💡 Please check the ID and try again."
+
+    tg_id = result.get("tg_id")
+    number = result.get("number")
+    country = result.get("country")
+    country_code = result.get("country_code")
+
+    if not number:
+        return f"❌ No phone number found for Telegram ID: `{query}`"
+
     clean_data = {
-        "Telegram ID": query,
-        "Phone": phone,
+        "Telegram ID": tg_id or query,
+        "Phone": number,
         "Country": country or "N/A",
         "Country Code": country_code or "N/A",
-        "Status": status,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    
+
     out = "**TG to Num Lookup**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 # ---------- QUERY LOGGING ----------
 def log_query(user_id, name, query_type, query_input):
     log = load_query_log()
