@@ -224,48 +224,40 @@ def format_number_output(data):
 def format_aadhar_output(data):
     if not data:
         return "❌ No data found."
-    
-    results = []
-    query = None
-    
-    if isinstance(data, dict):
-        query = data.get("query") or data.get("q") or data.get("aadhar")
-        
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-    
-    if not results:
-        q = query or "Unknown"
-        return f"❌ No data found for Aadhar: `{q}`\n\n💡 Please check the number and try again (12 digits)."
-    
+
+    # Extract data from new API structure
+    result = data.get("result", {})
+    success = result.get("success", False)
+    query = result.get("query", "Unknown")
+    results = result.get("results", [])
+    total = result.get("total", 0)
+
+    if not success or total == 0 or not results:
+        return f"❌ No data found for Aadhar: `{query}`\n\n💡 Please check the number and try again."
+
+    # Clean and format results
     clean_results = []
-    for record in results:
+    for record in results[:10]:  # Limit to 10 records
         clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "":
+            if value is not None and value != "" and value != "NA":
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
-    
+
     if not clean_results:
-        q = query or "Unknown"
-        return f"❌ No data found for Aadhar: `{q}`"
-    
+        return f"❌ No data found for Aadhar: `{query}`"
+
     clean_data = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    
+
     out = "**Aadhar Info**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_pan_output(data):
     if not data:
         return "❌ No data found."
