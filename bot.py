@@ -22,12 +22,12 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://darkxapi.onrender.com/api/v1/info?key=Dark&query={}"
+API_NUMBER = "https://apihitech.vercel.app/search?q={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
 API_EMAIL = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
-API_AADHAR = "https://darkxapi.onrender.com/api/v1/info?key=Dark&query={}"
+API_AADHAR = "https://redxapipanel.vercel.app/api/v1/info?service=aadharinfo&key=aadhardemo&query={}"
 API_IP = "https://talks-chain-restrictions-statistics.trycloudflare.com/search?query={}"
 API_PAN = "https://counted-developing-parade-man.trycloudflare.com/pan-info?pan={}"
 API_TG_TO_NUM = "https://tg2num-botadminshere.vercel.app/?id={}"   # NEW
