@@ -174,18 +174,21 @@ def get_keyboard(user_id=None):
         return get_admin_keyboard()
     return get_user_keyboard()
 
-# ---------- FORMAT FUNCTIONS (ALL FIXED) ----------
-
+# ---------- FORMAT FUNCTIONS (ALL FIXED)-- ----
 def format_number_output(data):
     if not data:
         return "❌ No data found."
 
-    # Extract data from new API structure
-    # Check if data has 'result' wrapper
-    if "result" in data:
-        result_data = data["result"]
-    else:
-        result_data = data
+    # Handle nested "result.result" structure
+    result_data = data
+    
+    # Check for nested result
+    if "result" in result_data:
+        result_data = result_data["result"]
+    
+    # If still has "result" key, go one level deeper
+    if isinstance(result_data, dict) and "result" in result_data:
+        result_data = result_data["result"]
 
     success = result_data.get("success", False)
     query = result_data.get("number") or result_data.get("query") or "Unknown"
@@ -197,7 +200,7 @@ def format_number_output(data):
 
     # Clean and format results
     clean_results = []
-    for record in results[:15]:  # Limit to 15 records
+    for record in results[:15]:
         clean_record = {}
         for key, value in record.items():
             if value is not None and value != "" and value != "NA":
