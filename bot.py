@@ -179,48 +179,45 @@ def get_keyboard(user_id=None):
 def format_number_output(data):
     if not data:
         return "❌ No data found."
-    
-    results = []
-    query = None
-    
-    if isinstance(data, dict):
-        query = data.get("query") or data.get("q") or data.get("number")
-        
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-    
-    if not results:
-        q = query or "Unknown"
-        return f"❌ No data found for number: `{q}`\n\n💡 Please check the number and try again."
-    
+
+    # Extract data from new API structure
+    # Check if data has 'result' wrapper
+    if "result" in data:
+        result_data = data["result"]
+    else:
+        result_data = data
+
+    success = result_data.get("success", False)
+    query = result_data.get("number") or result_data.get("query") or "Unknown"
+    results = result_data.get("results", [])
+    total = result_data.get("total", 0)
+
+    if not success or total == 0 or not results:
+        return f"❌ No data found for number: `{query}`\n\n💡 Please check the number and try again."
+
+    # Clean and format results
     clean_results = []
-    for record in results:
+    for record in results[:15]:  # Limit to 15 records
         clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "":
+            if value is not None and value != "" and value != "NA":
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
-    
+
     if not clean_results:
-        q = query or "Unknown"
-        return f"❌ No data found for number: `{q}`"
-    
+        return f"❌ No data found for number: `{query}`"
+
     clean_data = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    
+
     out = "**Number Lookup**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_aadhar_output(data):
     if not data:
         return "❌ No data found."
