@@ -22,23 +22,24 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://redxapipanel.vercel.app/api/v1/info?service=numinfo&key=numdemo&query={}"
+API_NUMBER = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
 API_EMAIL = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
-API_AADHAR = "https://redxapipanel.vercel.app/api/v1/info?service=aadharinfo&key=aadhardemo&query={}"
+API_AADHAR = "https://travelers-creature-sarah-rogers.trycloudflare.com/search?q={}"
 API_IP = "https://talks-chain-restrictions-statistics.trycloudflare.com/search?query={}"
 API_PAN = "https://counted-developing-parade-man.trycloudflare.com/pan-info?pan={}"
-API_TG_TO_NUM = "https://tg2num-botadminshere.vercel.app/?id={}"   # NEW
+API_TG_TO_NUM = "https://tg2num-botadminshere.vercel.app/?id={}"
 
-COINS_ON_START = 5
+COINS_ON_START = 10          # ✅ Changed to 10
 COST_PER_LOOKUP = 1
 REFERRAL_BONUS = 1
 HISTORY_LIMIT = 10
 DATA_FILE = "user_data.json"
 BLOCK_FILE = "blocked_users.json"
 QUERY_LOG_FILE = "query_log.json"
+DELEGATION_FILE = "delegation.json"   # Moderators & Collaborators
 MAX_LOG_ENTRIES = 200
 
 # ---------- DATA HANDLING ----------
@@ -72,6 +73,16 @@ def save_query_log(log):
     with open(QUERY_LOG_FILE, "w") as f:
         json.dump(log, f, indent=2)
 
+def load_delegation():
+    if os.path.exists(DELEGATION_FILE):
+        with open(DELEGATION_FILE, "r") as f:
+            return json.load(f)
+    return {"moderators": [], "collaborators": []}
+
+def save_delegation(data):
+    with open(DELEGATION_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
 def get_user_data(user_id, name=None):
     data = load_data()
     uid = str(user_id)
@@ -95,6 +106,24 @@ def update_user_data(user_id, new_data):
     data[str(user_id)] = new_data
     save_data(data)
 
+# ---------- DELEGATION HELPERS ----------
+def is_admin(user_id):
+    return user_id in ADMIN_IDS
+
+def is_moderator(user_id):
+    delegation = load_delegation()
+    return user_id in [int(x) for x in delegation.get("moderators", [])]
+
+def is_collaborator(user_id):
+    delegation = load_delegation()
+    return user_id in [int(x) for x in delegation.get("collaborators", [])]
+
+def has_admin_access(user_id):
+    return is_admin(user_id) or is_moderator(user_id)
+
+def has_unlimited_access(user_id):
+    return is_admin(user_id) or is_moderator(user_id) or is_collaborator(user_id)
+
 # ---------- CONTINUOUS VERIFICATION ----------
 async def is_member(user_id, context):
     for ch in CHANNELS:
@@ -109,7 +138,7 @@ async def is_member(user_id, context):
     return True
 
 async def is_verified(user_id, context):
-    if user_id in ADMIN_IDS:
+    if has_admin_access(user_id):
         return True
     if user_id in load_blocked():
         return False
@@ -149,7 +178,19 @@ def get_bot_management_menu():
         [InlineKeyboardButton("✅ Unblock User", callback_data="admin_unblock")],
         [InlineKeyboardButton("👥 All Users", callback_data="admin_all_users")],
         [InlineKeyboardButton("🚫 Blocked Users", callback_data="admin_blocked_users")],
+        [InlineKeyboardButton("👑 Admin Delegation", callback_data="admin_delegation")],
         [InlineKeyboardButton("❌ Close", callback_data="admin_close")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def get_delegation_menu():
+    keyboard = [
+        [InlineKeyboardButton("🛡️ Add Moderator", callback_data="deleg_add_mod")],
+        [InlineKeyboardButton("🤝 Add Collaborator", callback_data="deleg_add_collab")],
+        [InlineKeyboardButton("📋 List Delegations", callback_data="deleg_list")],
+        [InlineKeyboardButton("🗑️ Remove Moderator", callback_data="deleg_remove_mod")],
+        [InlineKeyboardButton("🗑️ Remove Collaborator", callback_data="deleg_remove_collab")],
+        [InlineKeyboardButton("🔙 Back", callback_data="admin_back")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -170,40 +211,42 @@ def get_bot_messenger_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 def get_keyboard(user_id=None):
-    if user_id and user_id in ADMIN_IDS:
+    if user_id and has_admin_access(user_id):
         return get_admin_keyboard()
     return get_user_keyboard()
 
-# ---------- FORMAT FUNCTIONS (ALL FIXED)-- ----
+# ---------- FORMAT FUNCTIONS ----------
+
+def unwrap_result(data, max_depth=3):
+    """Unwrap nested 'result' keys"""
+    result_data = data
+    for _ in range(max_depth):
+        if isinstance(result_data, dict) and "result" in result_data:
+            result_data = result_data["result"]
+        else:
+            break
+    return result_data
+
 def format_number_output(data):
     if not data:
         return "❌ No data found."
-
-    # Handle nested "result.result" structure
-    result_data = data
     
-    # Check for nested result
-    if "result" in result_data:
-        result_data = result_data["result"]
-    
-    # If still has "result" key, go one level deeper
-    if isinstance(result_data, dict) and "result" in result_data:
-        result_data = result_data["result"]
-
+    result_data = unwrap_result(data)
     success = result_data.get("success", False)
     query = result_data.get("number") or result_data.get("query") or "Unknown"
     results = result_data.get("results", [])
     total = result_data.get("total", 0)
 
-    if not success or total == 0 or not results:
+    if not results:
         return f"❌ No data found for number: `{query}`\n\n💡 Please check the number and try again."
 
-    # Clean and format results
     clean_results = []
     for record in results[:15]:
+        if not isinstance(record, dict):
+            continue
         clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "" and value != "NA":
+            if value is not None and value != "" and value != "NA" and value != "null":
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
@@ -216,31 +259,31 @@ def format_number_output(data):
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-
     out = "**Number Lookup**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
+
 def format_aadhar_output(data):
     if not data:
         return "❌ No data found."
+    
+    result_data = unwrap_result(data)
+    success = result_data.get("success", False)
+    query = result_data.get("query") or result_data.get("aadhar") or result_data.get("number") or "Unknown"
+    results = result_data.get("results", [])
+    total = result_data.get("total", 0)
 
-    # Extract data from new API structure
-    result = data.get("result", {})
-    success = result.get("success", False)
-    query = result.get("query", "Unknown")
-    results = result.get("results", [])
-    total = result.get("total", 0)
+    if not results:
+        return f"❌ No data found for Aadhar: `{query}`\n\n💡 Please check the Aadhar number and try again."
 
-    if not success or total == 0 or not results:
-        return f"❌ No data found for Aadhar: `{query}`\n\n💡 Please check the number and try again."
-
-    # Clean and format results
     clean_results = []
-    for record in results[:10]:  # Limit to 10 records
+    for record in results[:15]:
+        if not isinstance(record, dict):
+            continue
         clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "" and value != "NA":
+            if value is not None and value != "" and value != "NA" and value != "null":
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
@@ -253,59 +296,47 @@ def format_aadhar_output(data):
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-
     out = "**Aadhar Info**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
+
 def format_pan_output(data):
     if not data:
         return "❌ No data found."
     
-    results = []
-    query = None
-    
-    if isinstance(data, dict):
-        query = data.get("query") or data.get("q") or data.get("pan")
-        
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
-        elif "data" in data and isinstance(data["data"], dict):
-            results = [data["data"]]
+    result_data = unwrap_result(data)
+    success = result_data.get("success", False)
+    query = result_data.get("query") or result_data.get("pan") or "Unknown"
+    results = result_data.get("results", [])
     
     if not results:
-        if isinstance(data, dict) and "pan" in data:
-            results = [data]
+        if isinstance(result_data, dict) and "pan" in result_data:
+            results = [result_data]
         else:
-            q = query or "Unknown"
-            return f"❌ No data found for PAN: `{q}`\n\n💡 Please check the PAN number and try again."
+            return f"❌ No data found for PAN: `{query}`\n\n💡 Please check the PAN number and try again."
     
     clean_results = []
-    for record in results:
+    for record in results[:15]:
         if not isinstance(record, dict):
             continue
-        clean = {}
+        clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "":
-                clean[key] = value
-        if clean:
-            clean_results.append(clean)
-    
+            if value is not None and value != "" and value != "NA" and value != "null":
+                clean_record[key] = value
+        if clean_record:
+            clean_results.append(clean_record)
+
     if not clean_results:
-        q = query or "Unknown"
-        return f"❌ No data found for PAN: `{q}`"
-    
-    result = {
+        return f"❌ No data found for PAN: `{query}`"
+
+    clean_data = {
         "total_records": len(clean_results),
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
     out = "**PAN Info**\n```json\n"
-    out += json.dumps(result, indent=4, ensure_ascii=False)
+    out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
 
@@ -325,7 +356,7 @@ def format_ifsc_output(data):
         if value is not None and value != "":
             clean_data[key] = value
     
-    if not clean_data or len(clean_data) == 0:
+    if not clean_data:
         query = data.get("query") or data.get("code") or "Unknown"
         return f"❌ No data found for IFSC: `{query}`"
     
@@ -416,7 +447,6 @@ def format_weather_output(data):
         "forecast_3day": short_forecast,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    
     out = "**Weather Check**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
@@ -426,33 +456,21 @@ def format_email_output(data):
     if not data:
         return "❌ No data found."
     
-    results = []
-    query = None
-    success = True
-    
-    if isinstance(data, dict):
-        success = data.get("success", True)
-        query = data.get("query") or data.get("q") or data.get("email")
-        
-        if "results" in data:
-            results = data["results"]
-        elif "data" in data and isinstance(data["data"], dict) and "results" in data["data"]:
-            results = data["data"]["results"]
-        elif "data" in data and isinstance(data["data"], list):
-            results = data["data"]
+    result_data = unwrap_result(data)
+    success = result_data.get("success", True)
+    query = result_data.get("query") or result_data.get("q") or result_data.get("email") or "Unknown"
+    results = result_data.get("results", [])
     
     if not results:
-        q = query or "Unknown"
-        return f"❌ No data found for email: `{q}`\n\n💡 Please check the email address and try again."
+        return f"❌ No data found for email: `{query}`\n\n💡 Please check the email address and try again."
     
     clean_data = {
         "success": success,
-        "query": query or "N/A",
+        "query": query,
         "total_found": len(results),
         "results": results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
-    
     out = "**Email Info**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
@@ -463,7 +481,6 @@ def format_ip_output(data):
         return "❌ No data found."
     
     ip_data = None
-    
     if isinstance(data, dict):
         if 'data' in data and isinstance(data['data'], dict):
             ip_data = data['data']
@@ -514,21 +531,19 @@ def format_ip_output(data):
     out += "\n```"
     return out
 
-# ---------- NEW: TG TO NUM FORMAT ----------
 def format_tg_to_num_output(data):
     if not data:
         return "❌ No data found."
 
-    # Check if API returned success
     success = data.get("success", False)
     query = data.get("query", "Unknown")
     result = data.get("result", {})
 
     if not success:
-        return f"❌ No data found for Telegram ID: `{query}`\n\n💡 Please check the ID and try again."
+        return f"❌ No data found for Telegram ID: `{query}`"
 
-    tg_id = result.get("tg_id")
-    number = result.get("number")
+    tg_id = result.get("tg_id") or result.get("id")
+    number = result.get("number") or result.get("phone")
     country = result.get("country")
     country_code = result.get("country_code")
 
@@ -547,6 +562,7 @@ def format_tg_to_num_output(data):
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
+
 # ---------- QUERY LOGGING ----------
 def log_query(user_id, name, query_type, query_input):
     log = load_query_log()
@@ -568,7 +584,8 @@ async def perform_lookup(update, context, lookup_type, input_text):
     user_data = get_user_data(user_id)
     name = user_data.get("name", "Unknown")
 
-    if user_id not in ADMIN_IDS:
+    # Check coin only if user doesn't have unlimited access
+    if not has_unlimited_access(user_id):
         if user_data["coins"] < COST_PER_LOOKUP:
             await update.message.reply_text("❌ Not enough coins. Earn via referrals!")
             return
@@ -691,16 +708,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# ---------- RESTART COMMAND ----------
+# ---------- RESTART ----------
 async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id in ADMIN_IDS:
+    if has_admin_access(user_id):
         await update.message.reply_text("🔄 Bot is restarting...")
         os.execv(sys.executable, ['python'] + sys.argv)
     else:
         await update.message.reply_text("❌ You are not authorized to restart the bot.")
 
-# ---------- SET PHONE COMMAND ----------
+# ---------- SET PHONE ----------
 async def setphone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not context.args:
@@ -748,7 +765,7 @@ async def bot_management_callback(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     user_id = query.from_user.id
 
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         await query.edit_message_text("⛔ You are not authorized.")
         return
 
@@ -799,14 +816,22 @@ async def bot_management_callback(update: Update, context: ContextTypes.DEFAULT_
                 lines.append(f"🔍 {qtype}: `{qval}`")
                 lines.append("")
             msg = "📊 **QueryScope (Recent Activity)**\n\n" + "\n".join(lines)
-        await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=get_back_keyboard())
+        
+        # Send as new message instead of editing to avoid issues
+        await query.message.reply_text(msg, parse_mode="Markdown", reply_markup=get_back_keyboard())
         return
     elif data == "admin_stats":
         stats_data = load_data()
         total = len(stats_data)
         total_coins = sum(d.get("coins", 0) for d in stats_data.values())
         blocked = len(load_blocked())
-        msg = f"📊 **Bot Statistics**\n👥 Total Users: {total}\n🪙 Total Coins: {total_coins}\n🚫 Blocked: {blocked}"
+        deleg = load_delegation()
+        msg = (f"📊 **Bot Statistics**\n"
+               f"👥 Total Users: {total}\n"
+               f"🪙 Total Coins: {total_coins}\n"
+               f"🚫 Blocked: {blocked}\n"
+               f"🛡️ Moderators: {len(deleg.get('moderators', []))}\n"
+               f"🤝 Collaborators: {len(deleg.get('collaborators', []))}")
         await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=get_back_keyboard())
         return
     elif data == "admin_block":
@@ -842,14 +867,92 @@ async def bot_management_callback(update: Update, context: ContextTypes.DEFAULT_
             msg = "👥 **All Users**\n\n" + "\n".join(lines)
         await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=get_back_keyboard())
         return
+    elif data == "admin_delegation":
+        await query.edit_message_text(
+            "👑 **Admin Delegation**\n\n"
+            "Manage Moderators and Collaborators here:\n\n"
+            "🛡️ **Moderator** – Full admin access (except main admin powers)\n"
+            "🤝 **Collaborator** – Unlimited lookups (no coin cost)",
+            reply_markup=get_delegation_menu()
+        )
+        return
 
-# ---------- BOT MESSENGER CALLBACK HANDLERS ----------
+# ---------- DELEGATION CALLBACKS ----------
+async def delegation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+
+    if not is_admin(user_id):
+        await query.edit_message_text("⛔ Only main admin can manage delegations.")
+        return
+
+    data = query.data
+
+    if data == "deleg_add_mod":
+        context.user_data["deleg_action"] = "add_mod"
+        await query.edit_message_text(
+            "🛡️ **Add Moderator**\n\n"
+            "Send the Telegram User ID to add as Moderator.\n\n"
+            "Moderator will have full admin access.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    elif data == "deleg_add_collab":
+        context.user_data["deleg_action"] = "add_collab"
+        await query.edit_message_text(
+            "🤝 **Add Collaborator**\n\n"
+            "Send the Telegram User ID to add as Collaborator.\n\n"
+            "Collaborator will have unlimited lookups (no coin cost).",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    elif data == "deleg_list":
+        deleg = load_delegation()
+        mods = deleg.get("moderators", [])
+        collabs = deleg.get("collaborators", [])
+        
+        msg = "📋 **Delegation List**\n\n"
+        msg += "🛡️ **Moderators:**\n"
+        if mods:
+            for m in mods:
+                msg += f"  • `{m}`\n"
+        else:
+            msg += "  _None_\n"
+        
+        msg += "\n🤝 **Collaborators:**\n"
+        if collabs:
+            for c in collabs:
+                msg += f"  • `{c}`\n"
+        else:
+            msg += "  _None_\n"
+        
+        await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=get_back_keyboard())
+        return
+    elif data == "deleg_remove_mod":
+        context.user_data["deleg_action"] = "remove_mod"
+        await query.edit_message_text(
+            "🗑️ **Remove Moderator**\n\n"
+            "Send the Telegram User ID to remove from Moderators.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    elif data == "deleg_remove_collab":
+        context.user_data["deleg_action"] = "remove_collab"
+        await query.edit_message_text(
+            "🗑️ **Remove Collaborator**\n\n"
+            "Send the Telegram User ID to remove from Collaborators.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+
+# ---------- BOT MESSENGER CALLBACKS ----------
 async def messenger_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
 
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         await query.edit_message_text("⛔ You are not authorized.")
         return
 
@@ -933,8 +1036,43 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # ---- DELEGATION ACTIONS ----
+    if is_admin(user_id) and context.user_data.get("deleg_action"):
+        action = context.user_data["deleg_action"]
+        if text.isdigit():
+            target_id = int(text)
+            deleg = load_delegation()
+            
+            if action == "add_mod":
+                if str(target_id) not in [str(x) for x in deleg.get("moderators", [])]:
+                    deleg.setdefault("moderators", []).append(target_id)
+                    save_delegation(deleg)
+                    await update.message.reply_text(f"✅ User `{target_id}` added as **Moderator**", parse_mode="Markdown")
+                else:
+                    await update.message.reply_text("⚠️ Already a Moderator.")
+            elif action == "add_collab":
+                if str(target_id) not in [str(x) for x in deleg.get("collaborators", [])]:
+                    deleg.setdefault("collaborators", []).append(target_id)
+                    save_delegation(deleg)
+                    await update.message.reply_text(f"✅ User `{target_id}` added as **Collaborator**", parse_mode="Markdown")
+                else:
+                    await update.message.reply_text("⚠️ Already a Collaborator.")
+            elif action == "remove_mod":
+                deleg["moderators"] = [x for x in deleg.get("moderators", []) if str(x) != str(target_id)]
+                save_delegation(deleg)
+                await update.message.reply_text(f"✅ User `{target_id}` removed from Moderators.", parse_mode="Markdown")
+            elif action == "remove_collab":
+                deleg["collaborators"] = [x for x in deleg.get("collaborators", []) if str(x) != str(target_id)]
+                save_delegation(deleg)
+                await update.message.reply_text(f"✅ User `{target_id}` removed from Collaborators.", parse_mode="Markdown")
+            
+            context.user_data.pop("deleg_action")
+        else:
+            await update.message.reply_text("❌ Invalid User ID. Send a numeric ID.")
+        return
+
     # ---- ADMIN ACTIONS ----
-    if user_id in ADMIN_IDS and context.user_data.get("admin_action"):
+    if has_admin_access(user_id) and context.user_data.get("admin_action"):
         action = context.user_data["admin_action"]
 
         if action == "msg_text":
@@ -1054,14 +1192,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["lookup_type"] = "tg_to_num"
     elif text == "👤 𝘔𝘺 𝘈𝘤𝘤𝘰𝘶𝘯𝘵":
         user_data = get_user_data(user_id)
-        history = user_data.get("history", [])
-        hist_str = "\n".join(history[-5:]) if history else "No history"
-        msg = f"👤 **Your Account**\n🪙 Coins: {user_data['coins']}\n👥 Referrals: {user_data['referrals']}\n📜 History:\n{hist_str}"
+        msg = (f"👤 **My Account**\n\n"
+               f"📝 Name: {user_data.get('name', 'User')}\n"
+               f"🆔 User ID: `{user_id}`\n"
+               f"🪙 My Coins: {user_data['coins']}\n"
+               f"👥 Referrals: {user_data['referrals']}")
         await update.message.reply_text(msg, parse_mode="Markdown")
     elif text == "🔗 𝘙𝘦𝘧𝘦𝘳𝘳𝘢𝘭":
         ref_link = f"https://t.me/{context.bot.username}?start={user_id}"
         await update.message.reply_text(f"🔗 **Referral Link**\n\nShare this link to earn {REFERRAL_BONUS} coins per referral!\n\n{ref_link}")
-    elif text == "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵" and user_id in ADMIN_IDS:
+    elif text == "🛠️ 𝘉𝘰𝘵 𝘔𝘢𝘯𝘢𝘨𝘦𝘮𝘦𝘯𝘵" and has_admin_access(user_id):
         await update.message.reply_text("🛠️ Bot Management:", reply_markup=get_bot_management_menu())
     else:
         if context.user_data.get("lookup_type"):
@@ -1070,10 +1210,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("🤖 Use the buttons or /start.")
 
-# ---------- MEDIA HANDLERS FOR BOT MESSENGER ----------
+# ---------- MEDIA HANDLERS ----------
 async def handle_messenger_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         return
     if context.user_data.get("admin_action") == "msg_photo":
         photo = update.message.photo[-1].file_id
@@ -1091,7 +1231,7 @@ async def handle_messenger_photo(update: Update, context: ContextTypes.DEFAULT_T
 
 async def handle_messenger_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         return
     if context.user_data.get("admin_action") == "msg_video":
         video = update.message.video.file_id
@@ -1109,7 +1249,7 @@ async def handle_messenger_video(update: Update, context: ContextTypes.DEFAULT_T
 
 async def handle_messenger_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         return
     if context.user_data.get("admin_action") == "msg_audio":
         audio = update.message.audio.file_id
@@ -1127,7 +1267,7 @@ async def handle_messenger_audio(update: Update, context: ContextTypes.DEFAULT_T
 
 async def handle_messenger_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         return
     if context.user_data.get("admin_action") == "msg_document":
         doc = update.message.document.file_id
@@ -1145,7 +1285,7 @@ async def handle_messenger_document(update: Update, context: ContextTypes.DEFAUL
 
 async def handle_messenger_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in ADMIN_IDS:
+    if not has_admin_access(user_id):
         return
     if context.user_data.get("admin_action") == "msg_gif":
         if update.message.animation:
@@ -1194,24 +1334,39 @@ def ping():
 def run_web():
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
 
+# ---------- POST INIT ----------
+async def post_init(application):
+    """Set bot commands after initialization"""
+    await application.bot.set_my_commands([
+        ("start", "Start the bot"),
+        ("restart", "Restart the bot (Admin only)")
+    ])
+
 # ---------- MAIN ----------
 def main():
     threading.Thread(target=run_web, daemon=True).start()
-    application = Application.builder().token(BOT_TOKEN).build()
+    
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
-    # Commands - Only /start and /restart
+    # Commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("restart", restart))
 
     # Callback handlers
-    application.add_handler(CallbackQueryHandler(verify_callback, pattern="verify"))
-    application.add_handler(CallbackQueryHandler(bot_management_callback, pattern="admin_.*"))
-    application.add_handler(CallbackQueryHandler(messenger_callback, pattern="msg_.*"))
+    application.add_handler(CallbackQueryHandler(verify_callback, pattern="^verify$"))
+    application.add_handler(CallbackQueryHandler(delegation_callback, pattern="^deleg_.*"))
+    application.add_handler(CallbackQueryHandler(bot_management_callback, pattern="^admin_(?!deleg).*"))
+    application.add_handler(CallbackQueryHandler(messenger_callback, pattern="^msg_.*"))
 
     # Message handler
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Bot Messenger media handlers - only for admin
+    # Bot Messenger media handlers
     admin_id = ADMIN_IDS[0] if ADMIN_IDS else None
     if admin_id:
         application.add_handler(MessageHandler(filters.PHOTO & filters.User(admin_id), handle_messenger_photo))
