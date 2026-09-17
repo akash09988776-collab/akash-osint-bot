@@ -22,7 +22,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs ----------
-API_NUMBER = "https://redxapipanel.vercel.app/api/v1/info?service=numinfo&key=numdemo&query=9006640786={}"
+API_NUMBER = "https://akash-num-lookup.vercel.app/info?key=DEMO&query={}"
 API_IFSC = "https://vercei-kappa.vercel.app/ifsc?code={}"
 API_PINCODE = "https://nitin-apis-update-birthday-spacial.vercel.app/api?type=pincode&search={}"
 API_WEATHER = "https://nitin-wather-check-api.vercel.app/api?type=weather&search={}"
@@ -230,23 +230,32 @@ def unwrap_result(data, max_depth=3):
 def format_number_output(data):
     if not data:
         return "❌ No data found."
+
+    # Handle nested "result.result" structure
+    result_data = data
     
-    result_data = unwrap_result(data)
+    # Check for nested result
+    if "result" in result_data:
+        result_data = result_data["result"]
+    
+    # If still has "result" key, go one level deeper
+    if isinstance(result_data, dict) and "result" in result_data:
+        result_data = result_data["result"]
+
     success = result_data.get("success", False)
     query = result_data.get("number") or result_data.get("query") or "Unknown"
     results = result_data.get("results", [])
     total = result_data.get("total", 0)
 
-    if not results:
+    if not success or total == 0 or not results:
         return f"❌ No data found for number: `{query}`\n\n💡 Please check the number and try again."
 
+    # Clean and format results
     clean_results = []
     for record in results[:15]:
-        if not isinstance(record, dict):
-            continue
         clean_record = {}
         for key, value in record.items():
-            if value is not None and value != "" and value != "NA" and value != "null":
+            if value is not None and value != "" and value != "NA":
                 clean_record[key] = value
         if clean_record:
             clean_results.append(clean_record)
@@ -259,11 +268,11 @@ def format_number_output(data):
         "data": clean_results,
         "developer": "𐙚 𓆩𝘼𝙠𝙖𝙨𝙝 𝙊𝙨𝙞𝙣𝙩𓆪𓂃🧑‍💻🎀⃤"
     }
+
     out = "**Number Lookup**\n```json\n"
     out += json.dumps(clean_data, indent=4, ensure_ascii=False)
     out += "\n```"
     return out
-
 def format_aadhar_output(data):
     if not data:
         return "❌ No data found."
