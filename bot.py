@@ -21,7 +21,7 @@ CHANNELS = [
 ]
 
 # ---------- API URLs (UPDATED – नई APIs) ----------
-API_NUMBER = "https://akash-num-lookup.vercel.app/info?key=DEMO&query={}"
+API_NUMBER = "https://akash-number-lookup.vercel.app/info?key=DEMO&query={}"
 API_AADHAR = "https://akash-adhar-lookup.vercel.app/info?key=DEMO&query={}"
 API_TG_TO_NUM = "https://akash-tg-num.vercel.app/info?key=DEMO&query={}"
 
